@@ -178,52 +178,61 @@ export async function GET(req: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "created_at";
     const sortOrder = (searchParams.get("sortOrder") || "desc").toLowerCase() === "asc" ? "ASC" : "DESC";
 
-    let where = "1=1  AND status!='deleted'";
+    let where = "1=1 AND b.status!='deleted'";
     const params: any[] = [];
 
     if (search) {
-      where += " AND (notes LIKE ? OR status LIKE ?)";
+      where += " AND (b.notes LIKE ? OR b.status LIKE ?)";
       params.push(`%${search}%`, `%${search}%`);
     }
-
-    // فلترة حسب tenant_id
     if (tenant_id) {
-      where += " AND tenant_id = ?";
+      where += " AND b.tenant_id = ?";
       params.push(tenant_id);
     }
-
-    // فلترة حسب branch_id
     if (branch_id) {
-      where += " AND branch_id = ?";
+      where += " AND b.branch_id = ?";
       params.push(branch_id);
     }
-
-    // فلترة حسب vehicle_id
     if (vehicle_id) {
-      where += " AND vehicle_id = ?";
+      where += " AND b.vehicle_id = ?";
       params.push(vehicle_id);
     }
-
-    // فلترة حسب customer_id
     if (customer_id) {
-      where += " AND customer_id = ?";
+      where += " AND b.customer_id = ?";
       params.push(customer_id);
     }
 
-    const [countRows] = await pool.query(`SELECT COUNT(*) as count FROM bookings WHERE ${where}`, params);
+    const [countRows] = await pool.query(`SELECT COUNT(*) as count FROM bookings b WHERE ${where}`, params);
     const count = (countRows as any)[0]?.count || 0;
     const totalPages = Math.ceil(count / pageSize);
 
     const [bookings] = await pool.query(
-      `SELECT id, tenant_id, branch_id, vehicle_id, customer_id,
-              start_date, end_date, status, total_amount, notes,
-              created_at, updated_at
-       FROM bookings
-       WHERE ${where}
-       ORDER BY ${sortBy} ${sortOrder}
-       LIMIT ? OFFSET ?`,
+      `SELECT 
+        b.id,
+        b.tenant_id,
+        t.name AS tenant_name,
+        b.branch_id,
+        br.name AS branch_name,
+        br.name_ar AS branch_name_ar,
+        b.vehicle_id,
+        b.customer_id,
+        b.start_date,
+        b.end_date,
+        b.status,
+        b.total_amount,
+        b.notes,
+        b.created_at,
+        b.updated_at
+      FROM bookings b
+      LEFT JOIN tenants t ON b.tenant_id = t.id
+      LEFT JOIN branches br ON b.branch_id = br.id
+      WHERE ${where}
+      ORDER BY ${sortBy} ${sortOrder}
+      LIMIT ? OFFSET ?`,
       [...params, pageSize, (page - 1) * pageSize]
     );
+
+
 
     return NextResponse.json({ count, page, pageSize, totalPages, data: bookings }, { status: 200 });
 

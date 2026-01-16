@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import moment from 'moment';
-
+import { useLanguage } from '../context/LanguageContext';
 interface CustomerDocument {
   id: number;
   document_type: 'id_card' | 'passport' | 'license';
@@ -25,11 +25,12 @@ interface SessionUser {
   name: string;
   type: 'user' | 'customer';
 }
+const API_BASE_URL = '/api/v1/admin';
 
 export default function CustomerDocumentsPage() {
   const { data: session } = useSession();
   const user = session?.user as SessionUser | undefined;
-
+  const { language } = useLanguage();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
   const [documents, setDocuments] = useState<CustomerDocument[]>([]);
@@ -49,7 +50,7 @@ export default function CustomerDocumentsPage() {
   // ---------------- Fetch Tenants ----------------
   const fetchTenants = async () => {
     try {
-      const res = await fetch('/api/v1/admin/tenants');
+      const res = await fetch(`${API_BASE_URL}/tenants`);
       if (!res.ok) throw new Error('Failed to fetch tenants');
       const json = await res.json();
       setTenants(json.data || []);
@@ -64,7 +65,7 @@ export default function CustomerDocumentsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/admin/customer-documents?customer_id=${user.id}&tenant_id=${tenantId}`);
+      const res = await fetch(`${API_BASE_URL}/customer-documents?customer_id=${user.id}&tenant_id=${tenantId}`);
       if (!res.ok) throw new Error('Failed to fetch documents');
       const json = await res.json();
       setDocuments(json.data || []);
@@ -95,7 +96,7 @@ export default function CustomerDocumentsPage() {
     if (newDoc.file) formData.append('file', newDoc.file);
     if (newDoc.expiry_date) formData.append('expiry_date', newDoc.expiry_date);
 
-    const res = await fetch('/api/v1/admin/customer-documents', {
+    const res = await fetch(`${API_BASE_URL}/customer-documents`, {
       method: 'POST',
       body: formData,
     });
@@ -109,37 +110,64 @@ export default function CustomerDocumentsPage() {
     alert(err.message || 'Error uploading document.');
   }
 };
-
-const downloadDocument = async (documentId: number, fileName: string) => {
+const downloadDocument = async (customerDocumentId: number, fileName: string) => {
+  const isArabic = language === 'ar';
+  
+  const messages = {
+    unexpectedError: isArabic ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred',
+    accessError: isArabic ? 'خطأ في الوصول للملف' : 'Error accessing file',
+    emptyFile: isArabic ? 'الملف فاضي' : 'File is empty',
+    downloadError: isArabic ? 'حدث خطأ أثناء تحميل الملف' : 'An error occurred while downloading the file',
+  };
+  
   try {
-    const response = await fetch(`/api/v1/admin/customer-documents/${documentId}`, {
+    const response = await fetch(`${API_BASE_URL}/customer-documents/${customerDocumentId}`, {
       method: 'GET',
-      headers: { 'accept-language': 'ar' },
+      headers: { 
+        'accept-language': language,
+      },
     });
 
     if (!response.ok) {
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'خطأ غير معروف');
+        throw new Error(errorData.error || messages.unexpectedError);
       } else {
-        throw new Error(`تعذر العثور على الرابط المخصص للتحميل (404). تأكد من المسار.`);
+        throw new Error(`${messages.accessError}. Status: ${response.status}`);
       }
     }
 
+    const contentDisposition = response.headers.get('content-disposition');
     const blob = await response.blob();
+    
+    if (blob.size === 0) {
+      throw new Error(messages.emptyFile);
+    }
+    let downloadFileName = fileName;
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename\*?=['"]?(?:UTF-\d['"]*)?([^;\r\n"']*)['"]?;?/i);
+      if (fileNameMatch && fileNameMatch[1]) {
+        downloadFileName = decodeURIComponent(fileNameMatch[1]);
+      }
+    }
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', fileName); 
+    link.download = downloadFileName; 
+    link.style.display = 'none';
+    
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+    
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    }, 100);
 
   } catch (error: any) {
     console.error('Download Error:', error);
-    alert(error.message);
+    alert(error.message || messages.downloadError);
   }
 };
   // ---------------- Delete Document ----------------
@@ -147,7 +175,7 @@ const handleDelete = async (docId: number) => {
   if (!confirm('Are you sure you want to delete this document?')) return;
 
   try {
-    const res = await fetch(`/api/v1/admin/customer-documents/${docId}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE_URL}/customer-documents/${docId}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Error deleting document');
 
     if (selectedTenant) {

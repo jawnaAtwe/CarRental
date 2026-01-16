@@ -5,6 +5,7 @@ import path from "path";
 import fsPromises from "fs/promises";
 import { createReadStream } from "fs";
 import mime from "mime-types";
+
 const errorMessages = {
   en: {
     unauthorized: "Unauthorized access.",
@@ -116,14 +117,18 @@ export async function DELETE(req: NextRequest, { params }: any) {
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ customerDocumentId: number }> }
+  context: { params: Promise<{ customerDocumentId: string }> }
 ) {
   const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
-
   try {
-    const { customerDocumentId } = await params;
-    const documentId = Number(customerDocumentId);
+    const params = await context.params;
+    const idString = params.customerDocumentId;
 
+    if (!idString) {
+      return NextResponse.json({ error: "Missing ID" }, { status: 400 });
+    }
+
+    const documentId = parseInt(idString, 10);
     if (!documentId || isNaN(documentId)) {
       return NextResponse.json(
         { error: getErrorMessage("invalidDocumentId", lang) },
@@ -144,39 +149,32 @@ export async function GET(
         { status: 404 }
       );
     }
-
-    const filePath = path.join(process.cwd(), "uploads", document.file_url);
+    let filePath: string;
+    
+    if (path.isAbsolute(document.file_url)) {
+      filePath = document.file_url;
+    } else {
+      filePath = path.join(process.cwd(), "uploads", document.file_url);
+    }
     
     try {
       const stats = await fsPromises.stat(filePath);
       const fileName = path.basename(filePath);
       const contentType = mime.lookup(filePath) || "application/octet-stream";
-
-      const nodeStream = createReadStream(filePath);
-
-      const stream = new ReadableStream({
-        start(controller) {
-          nodeStream.on("data", (chunk: Buffer) => {
-            controller.enqueue(new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength));
-          });
-          nodeStream.on("end", () => controller.close());
-          nodeStream.on("error", (err) => controller.error(err));
-        },
-        cancel() {
-          nodeStream.destroy();
-        },
-      });
-
-      return new NextResponse(stream, {
+      const fileBuffer = await fsPromises.readFile(filePath);
+      const uint8Array = new Uint8Array(fileBuffer);
+      
+      return new NextResponse(uint8Array, {
         status: 200,
         headers: {
           "Content-Type": contentType,
-          "Content-Disposition": `attachment; filename="${encodeURIComponent(fileName)}"`,
+          "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
           "Content-Length": stats.size.toString(),
+          "Cache-Control": "no-cache",
         },
       });
 
-    } catch (fsError) {
+    } catch (fsError: any) {
       return NextResponse.json(
         { error: getErrorMessage("noDocumentsFound", lang) },
         { status: 404 }
@@ -184,7 +182,6 @@ export async function GET(
     }
 
   } catch (err) {
-    console.error("Download document error:", err);
     return NextResponse.json(
       { error: getErrorMessage("serverError", lang) },
       { status: 500 }
