@@ -54,6 +54,12 @@ export const SidebarItems = ({
         href={`/${firmId}/dashboard/vehicles`}
         icon={<TruckIcon  className="!w-6 !h-6" />}
       />
+       <SidebarItem
+        isActive={pathname.startsWith(`/${firmId}/dashboard/bookings`)}
+        title={lang(language, "sidebar.bookings")}
+        href={`/${firmId}/dashboard/bookings`}
+        icon={<TruckIcon  className="!w-6 !h-6" />}
+      />
   </>
 )}
 

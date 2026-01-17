@@ -210,7 +210,7 @@ export default function CustomerBookingsPage() {
     return <p className="text-center mt-10 text-red-500">Access denied.</p>;
 
   return (
-    <div className="min-h-screen p-6 bg-gray-100">
+   <div className="min-h-screen p-6 bg-gray-100 dark:bg-[#0B0F1A]">
       <div className="max-w-6xl mx-auto space-y-6">
 
         {/* Back Button */}
@@ -223,7 +223,7 @@ export default function CustomerBookingsPage() {
         </button>
 
         {/* Page Title */}
-        <h1 className="text-3xl font-bold text-gray-800 mt-4">
+       <h1 className="text-3xl font-bold mt-4 text-gray-800 dark:text-white">
           {language === "ar" ? "حجوزاتي" : "My Bookings"}
         </h1>
 
@@ -241,16 +241,18 @@ export default function CustomerBookingsPage() {
             const startDate = new Date(booking.start_date).toLocaleDateString();
             const endDate = new Date(booking.end_date).toLocaleDateString();
             return (
-              <div key={booking.id} className="bg-white shadow-lg rounded-2xl p-4 border-l-4 border-cyan-500 hover:shadow-xl transition relative">
+               <div key={booking.id} 
+               className="bg-white dark:bg-gray-900 shadow-lg dark:shadow-xl rounded-2xl p-4 
+                          border-l-4 border-cyan-500 hover:shadow-xl transition relative">
                 
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-2">
-                  <h2 className="text-lg font-bold">{booking.vehicle_make} {booking.vehicle_model}</h2>
+                 <h2 className="text-lg font-bold text-gray-800 dark:text-white">{booking.vehicle_make} {booking.vehicle_model}</h2>
                   {booking.status !== "cancelled" && (
                     <button
                       onClick={() => handleCancelBooking(booking.id)}
-                      className="ml-auto text-red-600 hover:text-red-800 transition"
-                      title={language === "ar" ? "إلغاء الحجز" : "Cancel Booking"}
+                       className="ml-auto text-red-600 hover:text-red-800 dark:hover:text-red-400 transition"
+                       title={language === "ar" ? "إلغاء الحجز" : "Cancel Booking"}
                     >
                       <TrashIcon className="h-5 w-5" />
                     </button>
@@ -263,41 +265,43 @@ export default function CustomerBookingsPage() {
                         setPaymentMethod("cash");
                         setShowPaymentForm(true);
                       }}
-                      className="mt-3 w-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2 px-4 rounded-lg"
-                    >
+                      className="mt-3 w-full bg-cyan-600 hover:bg-cyan-700 text-white dark:bg-cyan-500 dark:hover:bg-cyan-600 font-semibold py-2 px-4 rounded-lg transition"
+                >
                       {language === "ar" ? "إتمام الدفع" : "Pay Now"}
                     </button>
                   )}
                 </div>
 
                 {/* Details */}
-                <div className="flex items-center gap-2 mb-1">
-                  <MapPinIcon className="h-5 w-5 text-gray-400" />
+                <div className="flex items-center gap-2 mb-1 text-gray-700 dark:text-gray-300">
+                   <MapPinIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                   <span>{language === "ar" ? booking.branch_name_ar : booking.branch_name}</span>
                 </div>
-                   <div className="flex items-center gap-2 mb-1">
-                  <MapPinIcon className="h-5 w-5 text-gray-400" />
+                    <div className="flex items-center gap-2 mb-1 text-gray-700 dark:text-gray-300">
+                  <MapPinIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                   <span>{booking.tenant_name}</span>
                 </div>
-                <div className="flex items-center gap-2 mb-1">
-                  <CalendarIcon className="h-5 w-5 text-gray-400" />
-                  <span>{startDate} → {endDate}</span>
-                </div>
-                <div className="flex items-center gap-2 mb-2">
-                  <StarIcon className="h-5 w-5 text-amber-400" />
-                  <span>{language === "ar" ? "الإجمالي" : "Total"}: ${booking.total_amount}</span>
-                </div>
-                <div
-                  className={`mt-2 inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                    booking.status === "pending"
-                      ? "bg-yellow-200 text-yellow-800"
-                      : booking.status === "confirmed"
-                      ? "bg-green-200 text-green-800"
-                      : booking.status === "cancelled"
-                      ? "bg-red-200 text-red-800"
-                      : "bg-gray-200 text-gray-800"
-                  }`}
-                >
+                <div className="flex items-center gap-2 mb-1 text-gray-700 dark:text-gray-300">
+              <CalendarIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+              <span>{startDate} → {endDate}</span>
+            </div>
+                 <div className="flex items-center gap-2 mb-2">
+              <StarIcon className="h-5 w-5 text-amber-400" />
+              <span className="text-gray-800 dark:text-gray-200">
+                {language === "ar" ? "الإجمالي" : "Total"}: ${booking.total_amount}
+              </span>
+            </div>
+              <div
+              className={`mt-2 inline-block px-3 py-1 rounded-full text-sm font-semibold ${
+                booking.status === "pending"
+                  ? "bg-yellow-200 text-yellow-800 dark:bg-yellow-600 dark:text-yellow-100"
+                  : booking.status === "confirmed"
+                  ? "bg-green-200 text-green-800 dark:bg-green-600 dark:text-green-100"
+                  : booking.status === "cancelled"
+                  ? "bg-red-200 text-red-800 dark:bg-red-600 dark:text-red-100"
+                  : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+              }`}
+            >
                   {booking.status.toUpperCase()}
                 </div>
               </div>
@@ -308,50 +312,50 @@ export default function CustomerBookingsPage() {
 
       {/* Payment Modal */}
       {showPaymentForm && selectedBooking && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md relative">
-            <h2 className="text-xl font-bold mb-4">{language === "ar" ? "إتمام الدفع" : "Complete Payment"}</h2>
+       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-md relative text-gray-800 dark:text-gray-200">
+        <h2 className="text-xl font-bold mb-4">{language === "ar" ? "إتمام الدفع" : "Complete Payment"}</h2>
 
             {/* Amount */}
-            <label className="block mb-2">
-              {language === "ar" ? "المبلغ" : "Amount"}
-              <input type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(Number(e.target.value))} className="w-full mt-1 p-2 border rounded-lg" />
-            </label>
+ <div className="flex flex-col mb-4">
+          <label className="text-sm font-medium">{language === 'ar' ? 'المبلغ' : 'Amount'}</label>
+          <span className="mt-1">{paymentAmount}</span>
+        </div>
+             {/* Partial Payment */}
+        <label className="flex items-center mb-4 gap-2">
+          <input type="checkbox" checked={isPartialPayment} onChange={(e) => setIsPartialPayment(e.target.checked)} />
+          {language === "ar" ? "دفع جزئي" : "Partial Payment"}
+        </label>
 
-            {/* Partial Payment */}
-            <label className="flex items-center mb-4 gap-2">
-              <input type="checkbox" checked={isPartialPayment} onChange={(e) => setIsPartialPayment(e.target.checked)} />
-              {language === "ar" ? "دفع جزئي" : "Partial Payment"}
-            </label>
 
             {isPartialPayment && (
-              <label className="block mb-4">
-                {language === "ar" ? "المبلغ الجزئي" : "Partial Amount"}
-                <input type="number" value={partialPaymentAmount} onChange={(e) => setPartialPaymentAmount(Number(e.target.value))} max={paymentAmount} className="w-full mt-1 p-2 border rounded-lg" />
-              </label>
-            )}
+          <label className="block mb-4">
+            {language === "ar" ? "المبلغ الجزئي" : "Partial Amount"}
+            <input type="number" value={partialPaymentAmount} onChange={(e) => setPartialPaymentAmount(Number(e.target.value))} max={paymentAmount} className="w-full mt-1 p-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200" />
+          </label>
+        )}
 
-            {/* Payment Method */}
-            <label className="block mb-4">
-              {language === "ar" ? "طريقة الدفع" : "Payment Method"}
-              <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as "cash" | "card" | "bank_transfer" | "online")} className="w-full mt-1 p-2 border rounded-lg">
-                <option value="cash">{language === "ar" ? "كاش" : "Cash"}</option>
-                <option value="card">{language === "ar" ? "بطاقة" : "Card"}</option>
-                <option value="bank_transfer">{language === "ar" ? "تحويل بنكي" : "Bank Transfer"}</option>
-                <option value="online">{language === "ar" ? "أونلاين" : "Online"}</option>
-              </select>
-            </label>
+     {/* Payment Method */}
+        <label className="block mb-4">
+          {language === "ar" ? "طريقة الدفع" : "Payment Method"}
+          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as "cash" | "card" | "bank_transfer" | "online")} className="w-full mt-1 p-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200">
+            <option value="cash">{language === "ar" ? "كاش" : "Cash"}</option>
+            <option value="card">{language === "ar" ? "بطاقة" : "Card"}</option>
+            <option value="bank_transfer">{language === "ar" ? "تحويل بنكي" : "Bank Transfer"}</option>
+            <option value="online">{language === "ar" ? "أونلاين" : "Online"}</option>
+          </select>
+        </label>
 
-            {/* Modal Buttons */}
-            <div className="flex justify-end gap-2">
-              <button onClick={() => { setShowPaymentForm(false); setIsPartialPayment(false); setPartialPaymentAmount(0); }} className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">{language === "ar" ? "إلغاء" : "Cancel"}</button>
-              <button onClick={createPayment} disabled={paying} className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50">
-                {paying ? (language === "ar" ? "جارٍ الدفع..." : "Paying...") : (language === "ar" ? "دفع" : "Pay")}
-              </button>
-            </div>
-          </div>
+        {/* Modal Buttons */}
+        <div className="flex justify-end gap-2">
+          <button onClick={() => { setShowPaymentForm(false); setIsPartialPayment(false); setPartialPaymentAmount(0); }} className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600">{language === "ar" ? "إلغاء" : "Cancel"}</button>
+          <button onClick={createPayment} disabled={paying} className="px-4 py-2 bg-cyan-600 dark:bg-cyan-500 text-white rounded-lg hover:bg-cyan-700 dark:hover:bg-cyan-600 disabled:opacity-50">
+            {paying ? (language === "ar" ? "جارٍ الدفع..." : "Paying...") : (language === "ar" ? "دفع" : "Pay")}
+          </button>
         </div>
-      )}
+      </div>
     </div>
+  )}
+</div>
   );
 }

@@ -176,36 +176,64 @@ export async function GET(req: NextRequest) {
     const vehicle_id = searchParams.get("vehicle_id");
     const customer_id = searchParams.get("customer_id");
     const sortBy = searchParams.get("sortBy") || "created_at";
-    const sortOrder = (searchParams.get("sortOrder") || "desc").toLowerCase() === "asc" ? "ASC" : "DESC";
+    const sortOrder =
+      (searchParams.get("sortOrder") || "desc").toLowerCase() === "asc"
+        ? "ASC"
+        : "DESC";
 
-    let where = "1=1 AND b.status!='deleted'";
+    let where = "1=1 AND b.status != 'deleted'";
     const params: any[] = [];
 
+    //  Search by customer name & branch name
     if (search) {
-      where += " AND (b.notes LIKE ? OR b.status LIKE ?)";
-      params.push(`%${search}%`, `%${search}%`);
+      where += `
+        AND (
+          c.full_name LIKE ?
+          OR br.name LIKE ?
+          OR br.name_ar LIKE ?
+        )
+      `;
+      params.push(
+        `%${search}%`,
+        `%${search}%`,
+        `%${search}%`
+      );
     }
+
     if (tenant_id) {
       where += " AND b.tenant_id = ?";
       params.push(tenant_id);
     }
+
     if (branch_id) {
       where += " AND b.branch_id = ?";
       params.push(branch_id);
     }
+
     if (vehicle_id) {
       where += " AND b.vehicle_id = ?";
       params.push(vehicle_id);
     }
+
     if (customer_id) {
       where += " AND b.customer_id = ?";
       params.push(customer_id);
     }
 
-    const [countRows] = await pool.query(`SELECT COUNT(*) as count FROM bookings b WHERE ${where}`, params);
+    // 🔢 Count
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) as count
+       FROM bookings b
+       LEFT JOIN branches br ON b.branch_id = br.id
+       LEFT JOIN customers c ON b.customer_id = c.id
+       WHERE ${where}`,
+      params
+    );
+
     const count = (countRows as any)[0]?.count || 0;
     const totalPages = Math.ceil(count / pageSize);
 
+    // 📄 Data
     const [bookings] = await pool.query(
       `SELECT 
         b.id,
@@ -215,7 +243,11 @@ export async function GET(req: NextRequest) {
         br.name AS branch_name,
         br.name_ar AS branch_name_ar,
         b.vehicle_id,
+        v.make AS vehicle_make,
+        v.model AS vehicle_model,
+        CONCAT(v.make, ' ', v.model) AS vehicle_name,
         b.customer_id,
+        c.full_name AS customer_name,
         b.start_date,
         b.end_date,
         b.status,
@@ -226,21 +258,29 @@ export async function GET(req: NextRequest) {
       FROM bookings b
       LEFT JOIN tenants t ON b.tenant_id = t.id
       LEFT JOIN branches br ON b.branch_id = br.id
+      LEFT JOIN customers c ON b.customer_id = c.id
+      LEFT JOIN vehicles v ON b.vehicle_id = v.id
       WHERE ${where}
       ORDER BY ${sortBy} ${sortOrder}
       LIMIT ? OFFSET ?`,
       [...params, pageSize, (page - 1) * pageSize]
     );
 
-
-
-    return NextResponse.json({ count, page, pageSize, totalPages, data: bookings }, { status: 200 });
+    return NextResponse.json(
+      { count, page, pageSize, totalPages, data: bookings },
+      { status: 200 }
+    );
 
   } catch (error) {
     console.error("Get bookings error:", error);
     const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
-   return NextResponse.json({ error: getErrorMessage("serverError", lang) }, { status: 500 });  }
+    return NextResponse.json(
+      { error: getErrorMessage("serverError", lang) },
+      { status: 500 }
+    );
+  }
 }
+
 /**
  * DELETE /api/v1/admin/bookings
  *

@@ -21,6 +21,7 @@ export const LangData = {
     "sidebar.settings": "Settings",
     "sidebar.vehicles": "vehicles",
     "sidebar.Customers": "Customers",
+    "sidebar.bookings": "bookings",
     // Dashboard page
     "dashboard.welcome": "Welcome",
     "dashboard.overview": "Here is an overview of your legal activity.",
@@ -143,7 +144,7 @@ export const LangData = {
     "sidebar.settings": "الإعدادات",
     "sidebar.vehicles": "المركبات",
     "sidebar.Customers": "الزبائن",
-    
+    "sidebar.bookings": "الحجوزات",
     // Dashboard page
     "dashboard.welcome": "مرحباً",
     "dashboard.overview": "إليك نظرة عامة على نشاطك القانوني.",

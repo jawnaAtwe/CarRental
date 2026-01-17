@@ -26,11 +26,11 @@ export default function Home() {
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#0B0F1A]">
+   <div className="relative min-h-screen w-full bg-white dark:bg-[#0B0F1A]">
       {/* Glow background */}
       <div className="absolute inset-0">
-        <div className="absolute -top-40 -left-40 w-[35rem] h-[35rem] bg-indigo-600/20 rounded-full blur-[120px]" />
-        <div className="absolute top-1/3 -right-40 w-[30rem] h-[30rem] bg-amber-400/20 rounded-full blur-[120px]" />
+       <div className="absolute -top-40 -left-40 w-[35rem] h-[35rem] bg-indigo-400/20 rounded-full blur-[120px] dark:bg-indigo-600/20" />
+         <div className="absolute top-1/3 -right-40 w-[30rem] h-[30rem] bg-amber-200/20 rounded-full blur-[120px] dark:bg-amber-400/20" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center px-6 py-20">
@@ -45,10 +45,11 @@ export default function Home() {
 
 
 
-        <p className="text-center text-lg text-slate-300 max-w-2xl mb-16">
-          Premium car rental solutions — luxury sedans, sports cars, and powerful
-          SUVs. Flexible plans, competitive pricing, and exceptional service.
-        </p>
+      <p className="text-center text-lg max-w-2xl mb-16 text-slate-800 dark:text-slate-300">
+  Premium car rental solutions — luxury sedans, sports cars, and powerful
+  SUVs. Flexible plans, competitive pricing, and exceptional service.
+</p>
+
 
         {/* Cars */}
         <div className="relative flex justify-center gap-8 h-[32rem]">
@@ -94,12 +95,15 @@ export default function Home() {
               </motion.div>
 
               {/* Text */}
-              <div className="mt-5 text-center">
-                <h3 className="text-xl font-semibold text-white">
-                  {item.title}
-                </h3>
-                <p className="text-sm text-slate-400 mt-1">{item.desc}</p>
-              </div>
+             <div className="mt-5 text-center">
+  <h3 className="text-xl font-semibold text-black dark:text-white">
+    {item.title}
+  </h3>
+  <p className="text-sm mt-1 text-gray-600 dark:text-slate-400">
+    {item.desc}
+  </p>
+</div>
+
             </motion.div>
           ))}
         </div>
@@ -108,11 +112,15 @@ export default function Home() {
         <div className="mt-20 flex flex-wrap gap-6">
           <Button
             size="lg"
-            className="
-              bg-gradient-to-r from-amber-400 to-amber-600
-              text-black font-semibold
-              shadow-[0_10px_40px_rgba(245,158,11,0.4)]
-            "
+         className="
+  bg-gradient-to-r from-amber-400 to-amber-600
+  dark:from-amber-600 dark:to-amber-800
+  text-black dark:text-white
+  font-semibold
+  shadow-[0_10px_40px_rgba(245,158,11,0.4)]
+  dark:shadow-[0_10px_40px_rgba(245,158,11,0.6)]
+"
+
           >
             Book Your Car
           </Button>
@@ -121,10 +129,14 @@ export default function Home() {
             size="lg"
             variant="bordered"
             startContent={<GithubIcon />}
-            className="
-              border-white/20 text-white
-              hover:bg-white/10 transition
-            "
+      className="
+  border-black text-black           /* النهار: أسود */
+  dark:border-gray-400 dark:text-gray-200  /* الليل */
+  hover:bg-black/10 dark:hover:bg-gray-700/30
+  transition
+"
+
+
           >
             View Fleet
           </Button>

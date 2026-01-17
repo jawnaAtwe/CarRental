@@ -118,7 +118,7 @@ if (!payload.end_date) {
     const values: any[] = [];
 
     if (payload.customer_id) { fields.push("customer_id = ?"); values.push(payload.customer_id); }
-    if (payload.vehicle_id) { fields.push("vehicle_id = ?"); values.push(payload.car_id); }
+    if (payload.vehicle_id) { fields.push("vehicle_id = ?"); values.push(payload.vehicle_id); }
     if (payload.start_date) { fields.push("start_date = ?"); values.push(payload.start_date); }
     if (payload.end_date) { fields.push("end_date = ?"); values.push(payload.end_date); }
     if (payload.status) { fields.push("status = ?"); values.push(payload.status); }
@@ -167,10 +167,16 @@ export async function GET(req: NextRequest, { params }: any) {
     }
 
     const [rows] = await pool.query(
-      `SELECT *, DATE_FORMAT(start_date, '%Y-%m-%d') AS start_date,
-              DATE_FORMAT(end_date, '%Y-%m-%d') AS end_date
-       FROM bookings
-       WHERE id = ? AND status != 'deleted'`,
+      `SELECT 
+          b.*,
+          DATE_FORMAT(b.start_date, '%Y-%m-%d') AS start_date,
+          DATE_FORMAT(b.end_date, '%Y-%m-%d') AS end_date,
+          c.full_name AS customer_name,
+          CONCAT(v.make, ' ', v.model) AS vehicle_name
+       FROM bookings b
+       LEFT JOIN customers c ON b.customer_id = c.id
+       LEFT JOIN vehicles v ON b.vehicle_id = v.id
+       WHERE b.id = ? AND b.status != 'deleted'`,
       [bookingId]
     );
 
