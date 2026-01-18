@@ -168,7 +168,7 @@ export async function GET(req: NextRequest, { params }: any) {
 
     const [rows] = await pool.query(
       `SELECT 
-          b.*,
+          b.*,v.late_fee_day,
           DATE_FORMAT(b.start_date, '%Y-%m-%d') AS start_date,
           DATE_FORMAT(b.end_date, '%Y-%m-%d') AS end_date,
           c.full_name AS customer_name,

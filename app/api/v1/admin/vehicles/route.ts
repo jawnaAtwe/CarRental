@@ -112,6 +112,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       make,
       model,
       year,
+      late_fee_day,
       trim,
       category,
       license_plate,
@@ -196,6 +197,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     make,
     model,
     year,
+    late_fee_day,
     trim,
     category,
     license_plate,
@@ -209,13 +211,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     status,
     created_at
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, NOW())`,
   [
     tenant_id,
     branch_id || null,
     make || '',
     model || '',
     year || null,
+    late_fee_day || null,
     trim || '',
     category || 'Economy',
     license_plate || '',

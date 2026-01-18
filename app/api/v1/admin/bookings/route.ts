@@ -245,6 +245,7 @@ export async function GET(req: NextRequest) {
         b.vehicle_id,
         v.make AS vehicle_make,
         v.model AS vehicle_model,
+        v.late_fee_day,
         CONCAT(v.make, ' ', v.model) AS vehicle_name,
         b.customer_id,
         c.full_name AS customer_name,

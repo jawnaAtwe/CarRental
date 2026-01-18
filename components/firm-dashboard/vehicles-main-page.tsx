@@ -50,6 +50,7 @@ type VehicleDB = {
   make?: string | null;
   model?: string | null;
   year?: number | null;
+  late_fee_day?: number | null;
   trim?: string | null;
   category?: string | null;
   price_per_day: number;
@@ -69,6 +70,7 @@ type VehicleForm = {
   make: string;
   model: string;
   year?: number;
+  late_fee_day?: number;
   trim?: string;
   category?: string;
   price_per_day: number;
@@ -138,6 +140,7 @@ export default function VehiclesPage() {
     make: '',
     model: '',
     year: undefined,
+    late_fee_day: undefined,
     trim: '',
     category: '',
     price_per_day: 0,
@@ -351,6 +354,7 @@ export default function VehiclesPage() {
     make: '',
     model: '',
     year: undefined,
+    late_fee_day:undefined,
     trim: '',
     category: '',
     price_per_day: 0,
@@ -393,6 +397,7 @@ export default function VehiclesPage() {
     make: vehicle.make??"",
     model: vehicle.model??"",
     year: vehicle.year ?? undefined,
+    late_fee_day:vehicle.late_fee_day ?? undefined,
     trim: vehicle.trim ?? undefined,
     category: vehicle.category ?? undefined,
     license_plate: vehicle.license_plate ?? undefined,
@@ -866,7 +871,16 @@ export default function VehiclesPage() {
         : '-'}
     </p>
   </div>
-
+ <div>
+    <p className="text-xs uppercase tracking-wide text-foreground/60">
+      {language === 'ar' ? 'الغرامة / يوم' : 'late fee / Day'}
+    </p>
+    <p className="text-sm font-medium">
+      {activeVehicle.late_fee_day
+        ? `${activeVehicle.late_fee_day} ₪`
+        : '-'}
+    </p>
+  </div>
   {/* TRANSMISSION */}
   <div>
     <p className="text-xs uppercase tracking-wide text-foreground/60">
@@ -989,6 +1003,17 @@ export default function VehiclesPage() {
       }))
     }
     isRequired
+  />
+  <Input
+    label={language === "ar" ? "غرامة كل يوم " : "Late Fee Per Day"}
+    type="number"
+    value={formData.late_fee_day?.toString() || ""}
+    onChange={e =>
+      setFormData(p => ({
+        ...p,
+        late_fee_day: e.target.value === "" ? undefined : Number(e.target.value),
+      }))
+    }
   />
 {/* ===== BRANCH ===== */}
 <Select

@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
       customer_id,
       is_deposit,
       partial_amount,
+      paid_amount ,
       split_details,
       late_fee
     } = payload;
@@ -147,9 +148,9 @@ export async function POST(req: NextRequest) {
 
     const [result] = await pool.query(
       `INSERT INTO payments 
-        (booking_id, amount, payment_method, status, payment_date, is_deposit, partial_amount, split_details, late_fee, created_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-      [booking_id, amount, payment_method, status, mysqlDate, depositFlag, partialAmountValue, splitDetailsJson, lateFeeValue]
+        (booking_id, amount,paid_amount , payment_method, status, payment_date, is_deposit, partial_amount, split_details, late_fee, created_at) 
+       VALUES (?, ?, ?,?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [booking_id, amount,paid_amount , payment_method, status, mysqlDate, depositFlag, partialAmountValue, splitDetailsJson, lateFeeValue]
     );
 
     const payment_id = (result as any).insertId;

@@ -50,6 +50,7 @@ type BookingDB = {
   customer_name: string;
   vehicle_id: number;
   vehicle_name?: string | null;
+  late_fee_day?: number | null;
   start_date: string;          
   end_date: string;  
   total_amount: number;
@@ -64,6 +65,7 @@ type BookingForm = {
   tenant_id?: number;
   branch_id?: number;
   customer_id?: number; 
+  late_fee_day?: number;
   vehicle_id?: number;  
   start_date: string;
   vehicle_name?: string; 
@@ -145,6 +147,7 @@ const [formData, setFormData] = useState<BookingForm>({
   branch_id: undefined,
   customer_id: 0,   
   vehicle_id: 0,   
+  late_fee_day:0,
   vehicle_name:'',  
   start_date: '',      
   end_date: '',        
@@ -418,6 +421,15 @@ const fetchVehicles = async () => {
     };
    const openPaymentModal = (booking: BookingDB) => {
   setPaymentBooking(booking);
+const lateFeePerDay = booking.late_fee_day ?? 0;
+const endDate = booking.end_date ? new Date(booking.end_date) : null;
+const today = new Date();
+today.setHours(0, 0, 0, 0); // اليوم الحالي عند منتصف الليل
+
+let end = endDate ? new Date(endDate) : null;
+if (end) end.setHours(0, 0, 0, 0); // تاريخ الانتهاء عند منتصف الليل
+
+const daysLate = end ? Math.max(0, Math.floor((today.getTime() - end.getTime()) / (1000 * 60 * 60 * 24))) : 0;
 
   setPaymentData({
     booking_id:booking.id,
@@ -426,7 +438,7 @@ const fetchVehicles = async () => {
     payment_method: 'cash',
     is_deposit: false,
     partial_amount: 0,
-    late_fee: 0,
+    late_fee: lateFeePerDay * daysLate,
     split_details: '',
   });
 
@@ -450,6 +462,7 @@ const fetchVehicles = async () => {
         payment_method: paymentData.payment_method,
         is_deposit: paymentData.is_deposit,
         partial_amount: paymentData.partial_amount,
+        paid_amount: Number(paymentData.late_fee) + Number(paymentData.partial_amount > 0 ? paymentData.partial_amount : paymentData.amount),
         late_fee: paymentData.late_fee,
         split_details: paymentData.split_details,
       }),
@@ -1270,14 +1283,31 @@ const fetchVehicles = async () => {
           className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"
             type="number"
             label={language === 'ar' ? 'غرامة تأخير' : 'Late Fee'}
-            value={paymentData.late_fee.toString()}
-            onChange={(e) =>
-              setPaymentData(p => ({
-                ...p,
-                late_fee: Number(e.target.value),
-              }))
-            }
+          value={
+  paymentBooking
+    ? (() => {
+        const lateFeePerDay = paymentBooking.late_fee_day ?? 0;
+        const endDate = paymentBooking.end_date ? new Date(paymentBooking.end_date) : null;
+        if (!endDate || isNaN(endDate.getTime())) {
+          return '0';
+        }
+     const today = new Date();
+today.setHours(0, 0, 0, 0); // اليوم الحالي عند منتصف الليل
+
+let end = endDate ? new Date(endDate) : null;
+if (end) end.setHours(0, 0, 0, 0); // تاريخ الانتهاء عند منتصف الليل
+
+const daysLate = end ? Math.max(0, Math.floor((today.getTime() - end.getTime()) / (1000 * 60 * 60 * 24))) : 0;
+
+        return (lateFeePerDay * daysLate).toString();
+      })()
+    : ''
+}
+             isReadOnly
           />
+<div className="text-lg font-bold">
+  paidAmount =  {Number(paymentData.late_fee) + Number(paymentData.partial_amount > 0 ? paymentData.partial_amount : paymentData.amount)}
+</div>
 
           {/* Extra Details */}
           {(paymentData.payment_method === 'bank_transfer' ||
