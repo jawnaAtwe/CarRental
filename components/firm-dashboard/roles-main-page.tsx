@@ -501,8 +501,13 @@ export default function RolesPage() {
   };
 
   return (   
-    <div className="min-h-screen bg-gradient-to-b from-content2 via-content2 to-background px-4 py-8 md:px-8">
-    <div className="mx-auto w-full space-y-8">
+   <div className="min-h-screen 
+                bg-gradient-to-b 
+                from-gray-100 via-gray-100 to-white          /* النهار */
+                dark:from-gray-900 dark:via-gray-800 dark:to-gray-950  /* الليل */
+                px-4 py-8 md:px-8
+                transition-colors duration-300">
+<div className="mx-auto w-full space-y-8">
 
       {/* ======= Tenant Selector (Super Admin Only) ======= */}
       {isSuperAdmin && sessionLoaded && (
@@ -521,11 +526,11 @@ export default function RolesPage() {
       )}
           <section className="flex flex-col gap-4 pt-5 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.3em]">
-              {language === 'ar' ? 'إدارة الأدوار' : 'ROLES MANAGEMENT'}
+          <p className="text-sm uppercase tracking-[0.3em] text-gray-600 dark:text-gray-300 transition-colors duration-300">
+  {language === 'ar' ? 'إدارة الأدوار' : 'ROLES MANAGEMENT'}
             </p>
-          <h1 className="mt-2 text-3xl font-semibold text-text">
-              {language === 'ar' ? 'الأدوار' : 'Roles'}
+       <h1 className="mt-2 text-3xl font-semibold text-black dark:text-white transition-colors duration-300">
+   {language === 'ar' ? 'الأدوار' : 'Roles'}
             </h1>
           </div>
           <div className="flex gap-2">
@@ -540,23 +545,22 @@ export default function RolesPage() {
               </Button>
             )}
             <Button 
-              variant="solid" 
               color="primary" 
               startContent={<PlusIcon className="h-4 w-4" />} 
               onPress={openCreateRole}
-              className="
-    relative overflow-hidden
-    text-white font-extrabold tracking-wide
-    rounded-3xl
-    px-6 py-3
-    bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-500
-    shadow-xl
-    transition-all duration-500
-    transform hover:scale-110 hover:shadow-2xl
-    before:absolute before:top-0 before:left-[-75%] before:w-0 before:h-full
-    before:bg-white/30 before:rotate-12 before:transition-all before:duration-500
-    hover:before:w-[200%]
-  "
+             className="
+              relative overflow-hidden
+              text-white font-extrabold tracking-wide
+              rounded-3xl
+              px-6 py-3
+              bg-gradient-to-r from-green-500 via-lime-600 to-emerald-500
+              shadow-xl
+              transition-all duration-500
+              transform hover:scale-110 hover:shadow-2xl
+              before:absolute before:top-0 before:left-[-75%] before:w-0 before:h-full
+              before:bg-white/30 before:rotate-12 before:transition-all before:duration-500
+              hover:before:w-[200%]
+            "
             >
               {language === 'ar' ? 'دور جديد' : 'New Role'}
             </Button>
@@ -679,7 +683,11 @@ export default function RolesPage() {
           ) : (
             <TableBody emptyContent={language === 'ar' ? 'لا توجد أدوار' : 'No roles found'}>
               {roles.map((role) => (
-                <TableRow key={role.id} className="group bg-white/90 rounded-xl shadow-md transition-all duration-300 hover:scale-[1.02] hover:bg-white hover:shadow-xl">
+                <TableRow key={role.id}  className="group 
+                     bg-white/90 dark:bg-gray-800/80 
+                     rounded-xl shadow-md 
+                     transition-all duration-300 
+                     hover:scale-[1.02] hover:bg-white dark:hover:bg-gray-700 hover:shadow-xl">
                   <TableCell>
                     <User
                       avatarProps={{ icon: <UserGroupIcon className="h-5 w-5" />, size: 'md' }}
@@ -741,7 +749,7 @@ export default function RolesPage() {
 
       {/* View Modal */}
       <Modal isOpen={viewModal.isOpen} onOpenChange={viewModal.onOpenChange} size="lg" backdrop="blur">
-        <ModalContent className="bg-content1/95">
+     <ModalContent className="bg-white dark:bg-gray-800/95 transition-colors duration-300">
           {() =>
             activeRole && (
               <>
@@ -754,7 +762,7 @@ export default function RolesPage() {
                         : activeRole.name
                       }
                     </p>
-                    <p className="text-xs text-foreground/60 flex items-center gap-1">
+                   <p className="text-gray-700 dark:text-gray-300 transition-colors duration-300">
                       <TagIcon className="h-3 w-3" />
                       {activeRole.slug}
                     </p>

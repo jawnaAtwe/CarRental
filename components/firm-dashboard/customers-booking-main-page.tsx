@@ -210,7 +210,7 @@ export default function CustomerBookingsPage() {
     return <p className="text-center mt-10 text-red-500">Access denied.</p>;
 
   return (
-   <div className="min-h-screen p-6 bg-gray-100 dark:bg-[#0B0F1A]">
+ <div className="min-h-screen p-6 bg-gray-100 dark:bg-gray-900">
       <div className="max-w-6xl mx-auto space-y-6">
 
         {/* Back Button */}
@@ -242,12 +242,12 @@ export default function CustomerBookingsPage() {
             const endDate = new Date(booking.end_date).toLocaleDateString();
             return (
                <div key={booking.id} 
-               className="bg-white dark:bg-gray-900 shadow-lg dark:shadow-xl rounded-2xl p-4 
-                          border-l-4 border-cyan-500 hover:shadow-xl transition relative">
+              className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-xl rounded-2xl p-4 border-l-4 border-cyan-500 hover:shadow-xl transition relative">
                 
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-2">
-                 <h2 className="text-lg font-bold text-gray-800 dark:text-white">{booking.vehicle_make} {booking.vehicle_model}</h2>
+              <h2 className="text-lg font-bold text-gray-800 dark:text-white">
+{booking.vehicle_make} {booking.vehicle_model}</h2>
                   {booking.status !== "cancelled" && (
                     <button
                       onClick={() => handleCancelBooking(booking.id)}
@@ -273,19 +273,19 @@ export default function CustomerBookingsPage() {
                 </div>
 
                 {/* Details */}
-                <div className="flex items-center gap-2 mb-1 text-gray-700 dark:text-gray-300">
+             <div className="flex items-center gap-2 mb-1 text-gray-700 dark:text-gray-300">
                    <MapPinIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                   <span>{language === "ar" ? booking.branch_name_ar : booking.branch_name}</span>
                 </div>
-                    <div className="flex items-center gap-2 mb-1 text-gray-700 dark:text-gray-300">
+                <div className="flex items-center gap-2 mb-1 text-gray-700 dark:text-gray-300">
                   <MapPinIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                   <span>{booking.tenant_name}</span>
                 </div>
-                <div className="flex items-center gap-2 mb-1 text-gray-700 dark:text-gray-300">
+             <div className="flex items-center gap-2 mb-1 text-gray-700 dark:text-gray-300">
               <CalendarIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
               <span>{startDate} → {endDate}</span>
             </div>
-                 <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-1 text-gray-700 dark:text-gray-300">
               <StarIcon className="h-5 w-5 text-amber-400" />
               <span className="text-gray-800 dark:text-gray-200">
                 {language === "ar" ? "الإجمالي" : "Total"}: ${booking.total_amount}
@@ -313,8 +313,8 @@ export default function CustomerBookingsPage() {
       {/* Payment Modal */}
       {showPaymentForm && selectedBooking && (
        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-md relative text-gray-800 dark:text-gray-200">
-        <h2 className="text-xl font-bold mb-4">{language === "ar" ? "إتمام الدفع" : "Complete Payment"}</h2>
+    <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-md relative text-gray-800 dark:text-gray-200">
+<h2 className="text-xl font-bold mb-4">{language === "ar" ? "إتمام الدفع" : "Complete Payment"}</h2>
 
             {/* Amount */}
  <div className="flex flex-col mb-4">

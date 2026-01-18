@@ -159,9 +159,16 @@ export default function CustomerProfilePage() {
   };
 
   return (
-    <div className="min-h-screen p-6 bg-gray-100">
-      <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-2xl p-8 space-y-6">
-
+   <div className="min-h-screen p-6 bg-gray-100 dark:bg-gray-900 transition-colors">
+  <div className="
+    max-w-6xl mx-auto
+    bg-white dark:bg-gray-800
+    shadow-lg dark:shadow-black/40
+    rounded-2xl
+    p-8
+    space-y-6
+    transition-colors
+  ">
         {/* Header */}
         <div className="flex items-center gap-6">
  <div className="relative w-36 h-36 rounded-full overflow-hidden shadow-lg group">
@@ -215,8 +222,15 @@ export default function CustomerProfilePage() {
       <button
         type="button"
         onClick={() => handleChange("profile_image", null)}
-        className="bg-red-600 text-white px-4 py-1.5 rounded-xl text-sm font-semibold shadow hover:bg-red-500 transition"
-      >
+        className="
+    bg-white dark:bg-gray-700
+    text-gray-800 dark:text-gray-100
+    px-4 py-1.5 rounded-xl
+    text-sm font-semibold
+    shadow
+    hover:bg-gray-100 dark:hover:bg-gray-600
+    transition
+  " >
         {language === "ar" ? "حذف" : "Delete"}
       </button>
     )}
@@ -290,15 +304,29 @@ export default function CustomerProfilePage() {
                 } else {
                   inputElement = (
                     <input
-                      type="text"
-                      className={`border p-2 rounded-lg shadow-sm ${readonlyFields.includes(field)
-                        ? "bg-gray-50 cursor-not-allowed opacity-70"
-                        : "focus:outline-none focus:ring-2 focus:ring-blue-200"
-                      }`}
-                      value={profile?.[field] ?? ""}
-                      disabled={readonlyFields.includes(field)}
-                      onChange={e => handleChange(field, e.target.value)}
-                    />
+  type="text"
+  value={profile?.[field] ?? ""}
+  disabled={readonlyFields.includes(field)}
+  onChange={e => handleChange(field, e.target.value)}
+  className={`
+    border p-2 rounded-lg shadow-sm
+    text-gray-800 dark:text-gray-100
+    border-gray-300 dark:border-gray-600
+
+    ${readonlyFields.includes(field)
+      ? `
+        bg-gray-100 dark:bg-gray-700
+        cursor-not-allowed opacity-80
+      `
+      : `
+        bg-white dark:bg-gray-800
+        focus:outline-none
+        focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-600
+      `
+    }
+  `}
+/>
+
                   );
                 }
 

@@ -430,7 +430,12 @@ export default function BranchesPage() {
   };
   // ------------------ Render ------------------
  return (
- <div className="min-h-screen bg-gradient-to-b from-content2 via-content2 to-background px-4 py-8 md:px-8">
+ <div className="min-h-screen 
+                bg-gradient-to-b 
+                from-gray-100 via-gray-100 to-white  /* النهار */
+                dark:from-[#0B0F1A] dark:via-[#0B0F1A] dark:to-[#1C2030]  /* الليل */
+                px-4 py-8 md:px-8">
+
     <div className="mx-auto w-full space-y-8">
 
       {/* ======= Tenant Selector (Super Admin Only) ======= */}
@@ -451,10 +456,10 @@ export default function BranchesPage() {
       {/* Header */}
       <section className="flex flex-col gap-4 pt-5 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-sm uppercase tracking-[0.3em]">
+         <p className="text-sm uppercase tracking-[0.3em] text-gray-600 dark:text-gray-300">
             {language === 'ar' ? 'إدارة الفروع' : 'BRANCH MANAGEMENT'}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold text-text">
+         <h1 className="mt-2 text-3xl font-semibold text-text dark:text-white">
             {language === 'ar' ? 'الفروع' : 'BRANCHES'}
           </h1>
         </div>
@@ -474,12 +479,12 @@ export default function BranchesPage() {
             color="primary"
             startContent={<PlusIcon className="h-5 w-5 animate-pulse text-white drop-shadow-lg" />}
             onPress={openCreateBranch}
-            className="
+           className="
               relative overflow-hidden
               text-white font-extrabold tracking-wide
               rounded-3xl
               px-6 py-3
-              bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-500
+              bg-gradient-to-r from-green-500 via-lime-600 to-emerald-500
               shadow-xl
               transition-all duration-500
               transform hover:scale-110 hover:shadow-2xl
@@ -496,8 +501,9 @@ export default function BranchesPage() {
       {/* Table */}
       <Table
         aria-label={language === 'ar' ? 'جدول الفروع' : 'Branches table'}
-        classNames={{ table: 'min-w-full text-base bg-background rounded-lg shadow-md overflow-hidden transition-all duration-300' }}
-        selectionMode="multiple"
+       classNames={{
+    table: 'min-w-full text-base bg-white dark:bg-gray-800 rounded-lg shadow-md transition-all duration-300',
+  }} selectionMode="multiple"
         selectedKeys={selectedKeys}
         onSelectionChange={(keys) => setSelectedKeys(keys as Set<string>)}
         topContent={
@@ -557,7 +563,7 @@ export default function BranchesPage() {
         ) : (
           <TableBody emptyContent={language === 'ar' ? 'لا يوجد فروع' : 'No branches found'}>
             {branches.map((branch) => (
-              <TableRow key={String(branch.id)} className="group bg-white/90 rounded-xl shadow-md transition-all duration-300 hover:scale-[1.02] hover:bg-white hover:shadow-xl">
+              <TableRow key={String(branch.id)}  className="group bg-white dark:bg-gray-700/60 rounded-xl shadow-md transition-all duration-300 hover:scale-[1.02] hover:bg-gray-100 dark:hover:bg-gray-600 hover:shadow-xl">
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <div className="bg-cyan-400 rounded-full p-3 shadow-md transition-transform group-hover:scale-110">
@@ -591,7 +597,7 @@ export default function BranchesPage() {
       {/* Modals */}
       {/** View Modal */}
       <Modal isOpen={viewModal.isOpen} onClose={viewModal.onClose}>
-        <ModalContent>
+        <ModalContent className="bg-white dark:bg-gray-800 text-black dark:text-gray-200">
           <ModalHeader>{language === 'ar' ? 'تفاصيل الفرع' : 'Branch Details'}</ModalHeader>
           <ModalBody>
             {activeBranch && (
@@ -633,51 +639,58 @@ export default function BranchesPage() {
                   />
                 )}
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input
-                  label={language === 'ar' ? 'اسم الفرع' : 'Branch Name'}
-                  variant="faded"
-                  startContent={<BuildingOffice2Icon className="h-5 w-5 text-foreground/50" />}
-                  value={formData.name}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                  isRequired
-                  errorMessage={language === 'ar' ? 'حقل مطلوب' : 'Required field'}
-                />
-                <Input
-                  label={language === 'ar' ? 'اسم الفرع بالعربي' : 'Branch Name (Arabic)'}
-                  variant="faded"
-                  startContent={<GlobeAltIcon className="h-5 w-5 text-foreground/50" />}
-                  value={formData.name_ar || ''}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, name_ar: e.target.value }))}
-                />
-                <Textarea
-                  label={language === 'ar' ? 'العنوان' : 'Address'}
-                  variant="faded"
-                  minRows={2}
-                  startContent={<MapPinIcon className="h-5 w-5 text-foreground/50" />}
-                  value={formData.address || ''}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
-                />
-                <Textarea
-                  label={language === 'ar' ? 'العنوان بالعربي' : 'Address (Arabic)'}
-                  variant="faded"
-                  minRows={2}
-                  value={formData.address_ar || ''}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, address_ar: e.target.value }))}
-                />
-                <Input
-                  label="Latitude"
-                  type="number"
-                  value={formData.latitude ?? ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, latitude: e.target.value }))}
-                />
-                <Input
-                  label="Longitude"
-                  type="number"
-                  value={formData.longitude ?? ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, longitude: e.target.value }))}
-                />
-              </div>
+          <div className="grid gap-4 md:grid-cols-2">
+  <Input
+    className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400 rounded-lg"
+    label={language === 'ar' ? 'اسم الفرع' : 'Branch Name'}
+    variant="faded"
+    startContent={<BuildingOffice2Icon className="h-5 w-5 text-foreground/50" />}
+    value={formData.name}
+    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+    isRequired
+    errorMessage={language === 'ar' ? 'حقل مطلوب' : 'Required field'}
+  />
+  <Input
+    className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400 rounded-lg"
+    label={language === 'ar' ? 'اسم الفرع بالعربي' : 'Branch Name (Arabic)'}
+    variant="faded"
+    startContent={<GlobeAltIcon className="h-5 w-5 text-foreground/50" />}
+    value={formData.name_ar || ''}
+    onChange={(e) => setFormData((prev) => ({ ...prev, name_ar: e.target.value }))}
+  />
+  <Textarea
+    className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400 rounded-lg"
+    label={language === 'ar' ? 'العنوان' : 'Address'}
+    variant="faded"
+    minRows={2}
+    startContent={<MapPinIcon className="h-5 w-5 text-foreground/50" />}
+    value={formData.address || ''}
+    onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
+  />
+  <Textarea
+    className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400 rounded-lg"
+    label={language === 'ar' ? 'العنوان بالعربي' : 'Address (Arabic)'}
+    variant="faded"
+    minRows={2}
+    value={formData.address_ar || ''}
+    onChange={(e) => setFormData((prev) => ({ ...prev, address_ar: e.target.value }))}
+  />
+  <Input
+    className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400 rounded-lg"
+    label="Latitude"
+    type="number"
+    value={formData.latitude ?? ''}
+    onChange={(e) => setFormData(prev => ({ ...prev, latitude: e.target.value }))}
+  />
+  <Input
+    className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400 rounded-lg"
+    label="Longitude"
+    type="number"
+    value={formData.longitude ?? ''}
+    onChange={(e) => setFormData(prev => ({ ...prev, longitude: e.target.value }))}
+  />
+</div>
+
             </ModalBody>
           </Form>
           <ModalFooter className="flex justify-end gap-3">

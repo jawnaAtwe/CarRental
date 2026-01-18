@@ -762,8 +762,20 @@ export default function VehiclesPage() {
   emptyContent={vehicles.length === 0 ? (language==='ar'?'لا توجد مركبات':'No vehicles found') : undefined}
 >
             {vehicles.map(vehicle => (
-              <TableRow key={vehicle.id} className="group bg-white/90 rounded-xl shadow-md transition-all duration-300 hover:scale-[1.02] hover:bg-white hover:shadow-xl">
-                <TableCell>{vehicle.make} {vehicle.model}</TableCell>
+              <TableRow
+  key={vehicle.id}
+  className="
+    group
+    bg-white/90 dark:bg-gray-800/90
+    rounded-xl
+    shadow-md dark:shadow-gray-700/50
+    transition-all duration-300
+    hover:scale-[1.02] hover:bg-white dark:hover:bg-gray-700 hover:shadow-xl
+    text-gray-900 dark:text-gray-200
+    hover:text-gray-900 dark:hover:text-gray-100
+  "
+>
+  <TableCell>{vehicle.make} {vehicle.model}</TableCell>
                 <TableCell>{vehicle.category}</TableCell>
                 <TableCell>{vehicle.year}</TableCell>
                 <TableCell className="flex items-center justify-end gap-2">

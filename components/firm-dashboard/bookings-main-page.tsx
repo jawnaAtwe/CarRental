@@ -641,8 +641,8 @@ const fetchVehicles = async () => {
 
 
  return (
-  <div className="min-h-screen bg-gradient-to-b from-content2 via-content2 to-background px-4 py-8 md:px-8">
-    <div className="mx-auto w-full space-y-8">
+  <div className="min-h-screen bg-gradient-to-b from-white via-white to-gray-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 px-4 py-8 md:px-8">
+  <div className="mx-auto w-full space-y-8">
 
       {/* ======= Branch / Tenant Selector (Super Admin Only) ======= */}
  {/* TENANT (Super Admin Only) */}
@@ -694,10 +694,10 @@ const fetchVehicles = async () => {
    {/* ======= Header & Action Buttons ======= */}
       <section className="flex flex-col gap-4 pt-5 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-sm uppercase tracking-[0.3em]">
+           <p className="text-sm uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400">
             {language === 'ar' ? 'إدارة الحجوزات' : 'BOOKINGS MANAGEMENT'}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold text-text">
+         <h1 className="mt-2 text-3xl font-semibold text-gray-900 dark:text-white">
             {language === 'ar' ? 'الحجوزات' : 'Bookings'}
           </h1>
         </div>
@@ -721,7 +721,7 @@ const fetchVehicles = async () => {
             color="primary"
             startContent={<PlusIcon className="h-5 w-5 animate-pulse text-white drop-shadow-lg" />}
             onPress={openCreateBooking}
-            className="
+             className="
               relative overflow-hidden
               text-white font-extrabold tracking-wide
               rounded-3xl
@@ -735,8 +735,7 @@ const fetchVehicles = async () => {
               hover:before:w-[200%]
             "
           >
-            <span className="relative animate-gradient-text bg-gradient-to-r from-white via-green-100 to-white bg-clip-text text-transparent">
-              {language === 'ar' ? 'حجز جديدة' : 'New Booking'}
+           <span className="relative animate-gradient-text bg-gradient-to-r from-white via-green-100 to-white bg-clip-text text-transparent dark:from-gray-100 dark:via-gray-200 dark:to-gray-100"> {language === 'ar' ? 'حجز جديدة' : 'New Booking'}
             </span>
           </Button>
         </div>
@@ -747,7 +746,7 @@ const fetchVehicles = async () => {
   onOpenChange={deleteModal.onOpenChange}
   backdrop="blur"
 >
-  <ModalContent className="bg-content1/95">
+  <ModalContent className="bg-white dark:bg-gray-800 text-black dark:text-gray-200">
     {(onClose) => (
       <>
         <ModalHeader className="text-xl font-semibold text-danger">
@@ -809,7 +808,7 @@ const fetchVehicles = async () => {
     <Table
   aria-label={language === 'ar' ? 'جدول الحجوزات' : 'Bookings Table'}
   classNames={{
-    table: 'min-w-full text-base bg-background rounded-lg shadow-md overflow-hidden transition-all duration-300',
+    table: 'min-w-full text-base bg-white dark:bg-gray-800 rounded-lg shadow-md transition-all duration-300',
   }}
   selectionMode="multiple"
   selectedKeys={selectedKeys}
@@ -829,7 +828,7 @@ const fetchVehicles = async () => {
           variant="faded"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          className="min-w-[240px] transition-all duration-200 focus:shadow-md focus:border-primary"
+         className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"
         />
       </div>
 
@@ -874,7 +873,7 @@ const fetchVehicles = async () => {
     <TableBody emptyContent={Bookings.length === 0 ? (language==='ar'?'لا توجد حجوزات':'No bookings found') : undefined}>
       {Bookings.map(booking => (
         <TableRow key={booking.id}
-          className="group bg-white/90 rounded-xl shadow-md transition-all duration-300 hover:scale-[1.02] hover:bg-white hover:shadow-xl">
+         className="group bg-white dark:bg-gray-700/60 rounded-xl shadow-md transition-all duration-300 hover:scale-[1.02] hover:bg-gray-100 dark:hover:bg-gray-600 hover:shadow-xl">
           
           <TableCell>{booking.customer_name}</TableCell>
           <TableCell>{booking.vehicle_name || '-'}</TableCell>
@@ -883,7 +882,7 @@ const fetchVehicles = async () => {
           <TableCell className="text-right">{booking.total_amount} ₪</TableCell>
 
           <TableCell className="flex items-center justify-end gap-2">
-            <Button isIconOnly radius="full" variant="flat" color="default" onPress={() => fetchBookingDetails(booking.id)}>
+            <Button isIconOnly radius="full" variant="flat" color="default" onPress={() => fetchBookingDetails(booking.id)}  className="dark:text-gray-200 dark:border-gray-400 hover:bg-red-600/20">
               <InformationCircleIcon className="h-5 w-5"/>
             </Button>
             <Button variant="flat" color="primary" size="sm" startContent={<PencilSquareIcon className="h-4 w-4"/>}
@@ -1069,6 +1068,7 @@ const fetchVehicles = async () => {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {/* CUSTOMER */}
             <Select
+              className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200"
               label={language === 'ar' ? 'العميل' : 'Customer'}
               selectedKeys={formData.customer_id ? [formData.customer_id.toString()] : []}
               onChange={e => setFormData(p => ({ ...p, customer_id: Number(e.target.value) }))}
@@ -1081,6 +1081,7 @@ const fetchVehicles = async () => {
 
             {/* VEHICLE */}
 <Select
+  className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200"
   label={language === 'ar' ? 'المركبة' : 'Vehicle'}
   selectedKeys={
     formData.vehicle_id
@@ -1111,6 +1112,7 @@ const fetchVehicles = async () => {
 
             {/* BRANCH */}
             <Select
+              className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200"
               label={language === 'ar' ? 'الفرع' : 'Branch'}
               selectedKeys={formData.branch_id ? [formData.branch_id.toString()] : []}
               onChange={e => setFormData(p => ({ ...p, branch_id: Number(e.target.value) }))}
@@ -1123,6 +1125,7 @@ const fetchVehicles = async () => {
 
             {/* START DATE */}
             <Input
+              className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"
               label={language === 'ar' ? 'تاريخ البداية' : 'Start Date'}
               type="date"
               value={formData.start_date}
@@ -1132,6 +1135,7 @@ const fetchVehicles = async () => {
 
             {/* END DATE */}
             <Input
+              className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"
               label={language === 'ar' ? 'تاريخ النهاية' : 'End Date'}
               type="date"
               value={formData.end_date}
@@ -1141,6 +1145,7 @@ const fetchVehicles = async () => {
 
             {/* TOTAL AMOUNT */}
             <Input
+              className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"
               label={language === 'ar' ? 'المجموع' : 'Total Amount'}
               type="number"
               value={formData.total_amount.toString()}
@@ -1154,6 +1159,7 @@ const fetchVehicles = async () => {
             {/* STATUS (EDIT ONLY) */}
             {isEditing && (
               <Select
+               className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200"
                 label={language === 'ar' ? 'الحالة' : 'Status'}
                 selectedKeys={[formData.status || 'pending']}
                 onChange={e => setFormData(p => ({ ...p, status: e.target.value as BookingForm['status'] }))}
@@ -1210,6 +1216,7 @@ const fetchVehicles = async () => {
             />
           )}
  <Input
+ className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"
   type="number"
   label={language === 'ar' ? 'الحجز' : 'Booking Id'}
   value={paymentData.booking_id.toString()}
@@ -1217,6 +1224,7 @@ const fetchVehicles = async () => {
 />
           {/* Payment Method */}
           <Select
+           className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200"
             label={language === 'ar' ? 'طريقة الدفع' : 'Payment Method'}
             selectedKeys={[paymentData.payment_method]}
             onChange={(e) =>
@@ -1235,6 +1243,7 @@ const fetchVehicles = async () => {
 
           {/* Amount */}
           <Input
+          className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"
             type="number"
             label={language === 'ar' ? 'المبلغ' : 'Amount'}
             value={paymentData.amount.toString()}
@@ -1243,6 +1252,7 @@ const fetchVehicles = async () => {
 
           {/* Deposit */}
           <Input
+          className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"
             type="number"
             label={language === 'ar' ? 'دفعة جزئية' : 'Partial Amount'}
             value={paymentData.partial_amount.toString()}
@@ -1257,6 +1267,7 @@ const fetchVehicles = async () => {
 
           {/* Late Fee */}
           <Input
+          className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"
             type="number"
             label={language === 'ar' ? 'غرامة تأخير' : 'Late Fee'}
             value={paymentData.late_fee.toString()}
@@ -1272,6 +1283,7 @@ const fetchVehicles = async () => {
           {(paymentData.payment_method === 'bank_transfer' ||
             paymentData.payment_method === 'online') && (
             <Input
+            className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"
               label={language === 'ar' ? 'تفاصيل إضافية' : 'Details'}
               value={paymentData.split_details}
               onChange={(e) =>

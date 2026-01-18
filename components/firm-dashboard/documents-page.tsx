@@ -189,124 +189,225 @@ const handleDelete = async (docId: number) => {
 
 
   // ---------------- UI ----------------
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold">Customer Documents</h1>
-
-      {/* Select Tenant */}
-      <div className="bg-white p-4 rounded-lg shadow">
-        <label className="block mb-2 font-semibold">Select Tenant</label>
-        <select
-          value={selectedTenant?.id || ''}
-          onChange={(e) => {
-            const t = tenants.find(tn => tn.id === Number(e.target.value)) || null;
-            setSelectedTenant(t);
-          }}
-          className="border p-2 rounded w-full sm:w-64"
-        >
-          <option value="">--- Select Tenant ---</option>
-          {tenants.map((t) => (
-            <option key={t.id} value={t.id}>{t.name}</option>
-          ))}
-        </select>
-      </div>
-
-      {selectedTenant && (
-        <div className="bg-white p-6 rounded-lg shadow space-y-4">
-          <h2 className="text-lg font-semibold">
-            Add Document for {selectedTenant.name}
-          </h2>
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
-            <select
-              value={newDoc.document_type}
-              onChange={(e) => setNewDoc((prev) => ({ ...prev, document_type: e.target.value }))}
-              className="border p-2 rounded sm:w-48"
-            >
-              <option value="id_card">ID Card</option>
-              <option value="passport">Passport</option>
-              <option value="license">License</option>
-            </select>
-
-            <input
-              type="file"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) setNewDoc((prev) => ({ ...prev, file }));
-              }}
-            />
-
-            <input
-              type="date"
-              value={newDoc.expiry_date || ''}
-              onChange={(e) => setNewDoc((prev) => ({ ...prev, expiry_date: e.target.value }))}
-              className="border p-2 rounded sm:w-48"
-            />
-
-            <button
-              onClick={handleAddDocument}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
-            >
-              + Add Document
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Documents Table */}
-      {loading ? (
-        <p>Loading documents...</p>
-      ) : error ? (
-        <p className="text-red-500">{error}</p>
-      ) : documents.length === 0 ? (
-        <p>No documents found.</p>
-      ) : (
-        <div className="overflow-x-auto bg-white rounded-lg shadow">
-          <table className="min-w-full border text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-2 border">ID</th>
-                <th className="p-2 border">Type</th>
-                <th className="p-2 border">File</th>
-                <th className="p-2 border">Expiry</th>
-                <th className="p-2 border">Verified</th>
-                <th className="p-2 border">Uploaded</th>
-                <th className="p-2 border">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {documents.map((doc) => (
-                <tr key={doc.id} className="text-center hover:bg-gray-50">
-                  <td className="p-2 border">{doc.id}</td>
-                  <td className="p-2 border capitalize">{doc.document_type}</td>
-                  <td className="p-2 border">
-               <td className="p-2 border">
-  <button 
-    onClick={() => downloadDocument(doc.id, doc.file_url)}
-    className="text-blue-600 underline hover:text-blue-800 font-medium"
+return (
+  <div
+    className="
+      p-6 max-w-7xl mx-auto space-y-6
+      text-gray-900 dark:text-gray-100
+      transition-colors
+    "
   >
-    Download
-  </button>
-</td>
-</td>
-                  <td className="p-2 border">
-                    {doc.expiry_date ? moment(doc.expiry_date).format('YYYY-MM-DD') : '-'}
-                  </td>
-                  <td className="p-2 border">{doc.verified ? 'Yes' : 'No'}</td>
-                  <td className="p-2 border">{moment(doc.uploaded_at).format('YYYY-MM-DD HH:mm')}</td>
-                  <td className="p-2 border">
-                    <button
-                      onClick={() => handleDelete(doc.id)}
-                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+    <h1 className="text-2xl font-bold">
+      Customer Documents
+    </h1>
+
+    {/* Select Tenant */}
+    <div
+      className="
+        bg-white dark:bg-gray-800
+        p-4 rounded-lg shadow
+        transition-colors
+      "
+    >
+      <label className="block mb-2 font-semibold">
+        Select Tenant
+      </label>
+
+      <select
+        value={selectedTenant?.id || ''}
+        onChange={(e) => {
+          const t =
+            tenants.find(tn => tn.id === Number(e.target.value)) || null;
+          setSelectedTenant(t);
+        }}
+        className="
+          border p-2 rounded w-full sm:w-64
+          bg-white dark:bg-gray-700
+          text-gray-900 dark:text-white
+          border-gray-300 dark:border-gray-600
+        "
+      >
+        <option value="">--- Select Tenant ---</option>
+        {tenants.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name}
+          </option>
+        ))}
+      </select>
     </div>
-  );
+
+    {selectedTenant && (
+      <div
+        className="
+          bg-white dark:bg-gray-800
+          p-6 rounded-lg shadow space-y-4
+          transition-colors
+        "
+      >
+        <h2 className="text-lg font-semibold">
+          Add Document for {selectedTenant.name}
+        </h2>
+
+        <div className="flex flex-col sm:flex-row gap-4 items-end">
+          <select
+            value={newDoc.document_type}
+            onChange={(e) =>
+              setNewDoc((prev) => ({
+                ...prev,
+                document_type: e.target.value,
+              }))
+            }
+            className="
+              border p-2 rounded sm:w-48
+              bg-white dark:bg-gray-700
+              text-gray-900 dark:text-white
+              border-gray-300 dark:border-gray-600
+            "
+          >
+            <option value="id_card">ID Card</option>
+            <option value="passport">Passport</option>
+            <option value="license">License</option>
+          </select>
+
+          <input
+            type="file"
+            className="
+              text-sm
+              file:bg-blue-600 file:text-white
+              file:px-4 file:py-2 file:rounded
+              file:border-0
+              hover:file:bg-blue-700
+            "
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) setNewDoc((prev) => ({ ...prev, file }));
+            }}
+          />
+
+          <input
+            type="date"
+            value={newDoc.expiry_date || ''}
+            onChange={(e) =>
+              setNewDoc((prev) => ({
+                ...prev,
+                expiry_date: e.target.value,
+              }))
+            }
+            className="
+              border p-2 rounded sm:w-48
+              bg-white dark:bg-gray-700
+              text-gray-900 dark:text-white
+              border-gray-300 dark:border-gray-600
+            "
+          />
+
+          <button
+            onClick={handleAddDocument}
+            className="
+              bg-blue-600 text-white
+              px-6 py-2 rounded-lg
+              hover:bg-blue-700
+              transition font-semibold
+            "
+          >
+            + Add Document
+          </button>
+        </div>
+      </div>
+    )}
+
+    {/* Documents Table */}
+    {loading ? (
+      <p>Loading documents...</p>
+    ) : error ? (
+      <p className="text-red-600 dark:text-red-400">{error}</p>
+    ) : documents.length === 0 ? (
+      <p>No documents found.</p>
+    ) : (
+      <div
+        className="
+          overflow-x-auto
+          bg-white dark:bg-gray-800
+          rounded-lg shadow
+          transition-colors
+        "
+      >
+        <table className="min-w-full border text-sm">
+          <thead className="bg-gray-100 dark:bg-gray-700">
+            <tr>
+              <th className="p-2 border dark:border-gray-600">ID</th>
+              <th className="p-2 border dark:border-gray-600">Type</th>
+              <th className="p-2 border dark:border-gray-600">File</th>
+              <th className="p-2 border dark:border-gray-600">Expiry</th>
+              <th className="p-2 border dark:border-gray-600">Verified</th>
+              <th className="p-2 border dark:border-gray-600">Uploaded</th>
+              <th className="p-2 border dark:border-gray-600">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {documents.map((doc) => (
+              <tr
+                key={doc.id}
+                className="
+                  text-center
+                  hover:bg-gray-50 dark:hover:bg-gray-700
+                  transition-colors
+                "
+              >
+                <td className="p-2 border dark:border-gray-600">{doc.id}</td>
+                <td className="p-2 border capitalize dark:border-gray-600">
+                  {doc.document_type}
+                </td>
+
+                <td className="p-2 border dark:border-gray-600">
+                  <button
+                    onClick={() =>
+                      downloadDocument(doc.id, doc.file_url)
+                    }
+                    className="
+                      text-blue-600 dark:text-blue-400
+                      underline hover:text-blue-800 dark:hover:text-blue-300
+                      font-medium
+                    "
+                  >
+                    Download
+                  </button>
+                </td>
+
+                <td className="p-2 border dark:border-gray-600">
+                  {doc.expiry_date
+                    ? moment(doc.expiry_date).format('YYYY-MM-DD')
+                    : '-'}
+                </td>
+
+                <td className="p-2 border dark:border-gray-600">
+                  {doc.verified ? 'Yes' : 'No'}
+                </td>
+
+                <td className="p-2 border dark:border-gray-600">
+                  {moment(doc.uploaded_at).format('YYYY-MM-DD HH:mm')}
+                </td>
+
+                <td className="p-2 border dark:border-gray-600">
+                  <button
+                    onClick={() => handleDelete(doc.id)}
+                    className="
+                      bg-red-500 text-white
+                      px-3 py-1 rounded
+                      hover:bg-red-600
+                    "
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+);
+
 }

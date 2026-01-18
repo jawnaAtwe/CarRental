@@ -638,7 +638,13 @@ const toggleUserStatus = async (userId: number, currentStatus: UserDB['status'])
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-content2 via-content2 to-background px-4 py-8 md:px-8">
+    <div className="min-h-screen 
+                bg-gradient-to-b 
+                from-gray-100 via-gray-100 to-white          /* النهار */
+                dark:from-gray-900 dark:via-gray-800 dark:to-gray-950  /* الليل */
+                px-4 py-8 md:px-8
+                transition-colors duration-300">
+
     <div className="mx-auto w-full space-y-8">
 
       {/* ======= Tenant Selector (Super Admin Only) ======= */}
@@ -693,7 +699,7 @@ const toggleUserStatus = async (userId: number, currentStatus: UserDB['status'])
               text-white font-extrabold tracking-wide
               rounded-3xl
               px-6 py-3
-              bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-500
+              bg-gradient-to-r from-green-500 via-lime-600 to-emerald-500
               shadow-xl
               transition-all duration-500
               transform hover:scale-110 hover:shadow-2xl
@@ -733,7 +739,7 @@ const toggleUserStatus = async (userId: number, currentStatus: UserDB['status'])
         )}
 
         <Modal isOpen={deleteModal.isOpen} onOpenChange={deleteModal.onOpenChange} backdrop="blur">
-          <ModalContent className="bg-content1/95">
+          <ModalContent className="bg-white dark:bg-gray-800/95 transition-colors duration-300">
             {(onClose) => (
               <>
                 <ModalHeader className="text-xl font-semibold text-danger">
@@ -885,16 +891,17 @@ const toggleUserStatus = async (userId: number, currentStatus: UserDB['status'])
       {users.map((user) => (
         <TableRow 
           key={String(user.id)} 
-           className="
-    group
-    bg-white/90
-    rounded-xl
-    shadow-md
-    transition-all duration-300
-    hover:scale-[1.02]
-    hover:bg-white
-    hover:shadow-xl
-  "
+         className="
+  group
+  bg-white/90 dark:bg-gray-800/90
+  rounded-xl
+  shadow-md dark:shadow-gray-700/50
+  transition-all duration-300
+  hover:scale-[1.02]
+  hover:bg-white dark:hover:bg-gray-700
+  hover:shadow-xl dark:hover:shadow-gray-600/40
+"
+
         >
           <TableCell>
             <div className="flex items-center gap-2">

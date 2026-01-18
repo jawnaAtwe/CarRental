@@ -156,24 +156,65 @@ const CustomerDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col md:flex-row items-center justify-center gap-10 px-6 py-16 bg-gradient-to-b from-slate-900/90 via-slate-800/70 to-slate-900/90 overflow-hidden text-white">
-      <div className="w-full max-w-7xl space-y-10">
+    <div
+  className="
+    relative min-h-screen w-full flex flex-col md:flex-row
+    items-center justify-center gap-10 px-6 py-16 overflow-hidden
+    bg-gradient-to-b
+    from-gray-100 via-gray-50 to-white
+    dark:from-slate-900/90 dark:via-slate-800/70 dark:to-slate-900/90
+    text-gray-900 dark:text-white
+    transition-colors duration-300
+  "
+>
+<div className="w-full max-w-7xl space-y-10">
 
-        {/* Customer Info */}
-        <div className="bg-gray-800/80 rounded-2xl shadow-lg p-6 flex flex-col md:flex-row md:justify-between md:items-center">
-          <div>
-            <h2 className="text-3xl font-bold mb-2">{user?.name}</h2>
+    
+       <div
+  className="
+    bg-white/90 dark:bg-gray-800/80
+    rounded-2xl shadow-lg
+    p-6
+    transition-colors
+  "
+>
+   <div>
+            <h2 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">{user?.name}</h2>
             <p className="font-semibold">{user?.email}</p>
           </div>
           <div className="flex gap-4 mt-4 md:mt-0">
-            <div className="bg-amber-400/30 text-white px-4 py-2 rounded font-bold">Points: 1200</div>
-            <div className="bg-amber-400/30 text-white px-4 py-2 rounded font-bold">Active Bookings: 2</div>
+         <div className="
+    px-4 py-2 rounded font-bold
+    bg-amber-200 text-amber-900
+    dark:bg-amber-400/30 dark:text-white
+    transition-colors ">Points: 1200</div>
+
+<div
+  className="
+    px-4 py-2 rounded font-bold
+    bg-amber-200 text-amber-900
+    dark:bg-amber-400/30 dark:text-white
+    transition-colors
+  "
+>
+  Active Bookings: 2
+</div>
+
           </div>
         </div>
 
         {/* Company Selection */}
-        <div className="rounded-2xl shadow-lg p-6 text-center bg-gradient-to-r from-amber-400 to-amber-600 text-black">
-          <h2 className="text-2xl font-bold mb-4">Select a Car Company</h2>
+       <div
+  className="
+    rounded-2xl shadow-lg p-6 text-center
+    bg-gradient-to-r
+    from-amber-300 to-amber-500
+    dark:from-amber-400 dark:to-amber-600
+    text-black
+    transition-colors
+  "
+>
+  <h2 className="text-2xl font-bold mb-4">Select a Car Company</h2>
           <div className="flex flex-wrap justify-center gap-6">
             {tenants.map(tenant => (
               <button
@@ -199,7 +240,14 @@ const CustomerDashboardPage: React.FC = () => {
 
         {/* Branch Selection */}
         {selectedCompany && branches.length > 0 && (
-          <div className="rounded-2xl shadow-lg p-6 text-center bg-gray-800/70 text-white">
+        <div
+  className="
+    rounded-2xl shadow-lg p-6 text-center
+    bg-white/90 dark:bg-gray-800/70
+    text-gray-900 dark:text-white
+  "
+>
+
             <h2 className="text-2xl font-bold mb-4">{selectedCompany} Branches</h2>
             <div className="flex flex-wrap justify-center gap-6">
               {branches.map(branch => (

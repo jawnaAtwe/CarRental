@@ -479,15 +479,22 @@ export default function CustomersPage() {
     );
   };
  return (
-    <div className="min-h-screen bg-gradient-to-b from-content2 via-content2 to-background px-4 py-8 md:px-8">
+ <div className="min-h-screen 
+                bg-gradient-to-b 
+                from-content2-light dark:from-content2-dark
+                via-content2-light/95 dark:via-content2-dark/95
+                to-background-light dark:to-background-dark
+                px-4 py-8 md:px-8
+                transition-colors duration-300">
+
     <div className="mx-auto w-full space-y-8">
  {/* ======= Header & Action Buttons ======= */}
       <section className="flex flex-col gap-4 pt-5 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-sm uppercase tracking-[0.3em]">
+          <p className="text-black dark:text-white transition-colors duration-300">
             {language === 'ar' ? 'إدارة المستخدمين' : 'CUSTOMERS MANAGEMENT'}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold text-text">
+          <h1 className="text-black dark:text-white transition-colors duration-300">
             {language === 'ar' ? 'المستخدمون' : 'Customers'}
           </h1>
         </div>
@@ -518,7 +525,7 @@ export default function CustomersPage() {
               text-white font-extrabold tracking-wide
               rounded-3xl
               px-6 py-3
-              bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-500
+              bg-gradient-to-r from-green-500 via-lime-600 to-emerald-500
               shadow-xl
               transition-all duration-500
               transform hover:scale-110 hover:shadow-2xl
@@ -542,7 +549,7 @@ export default function CustomersPage() {
   scrollBehavior="inside"
   backdrop="blur"
 >
-          <ModalContent className="bg-content1/95 max-h-[90vh]">
+          <ModalContent className="bg-content1-light/95 dark:bg-content1-dark/95 transition-colors duration-300">
             {(onClose) => (
               <>
                 <ModalHeader className="relative overflow-hidden px-6 py-5 flex items-center gap-3 border-b border-divider">
@@ -695,16 +702,10 @@ export default function CustomersPage() {
       {customers.map((customer) => (
         <TableRow 
           key={String(customer.id)} 
-           className="
-    group
-    bg-white/90
-    rounded-xl
-    shadow-md
-    transition-all duration-300
-    hover:scale-[1.02]
-    hover:bg-white
-    hover:shadow-xl
-  "
+          className="group 
+                     bg-white/90 dark:bg-gray-800/80 
+                     rounded-xl shadow-md 
+                     transition-all duration-300 hover:scale-[1.02] hover:bg-white dark:hover:bg-gray-700 hover:shadow-xl"
         >
           <TableCell>
             <div className="flex items-center gap-2">
