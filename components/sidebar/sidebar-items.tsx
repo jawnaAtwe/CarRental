@@ -60,6 +60,12 @@ export const SidebarItems = ({
         href={`/${firmId}/dashboard/bookings`}
         icon={<TruckIcon  className="!w-6 !h-6" />}
       />
+         <SidebarItem
+        isActive={pathname.startsWith(`/${firmId}/dashboard/payments`)}
+        title={lang(language, "sidebar.payments")}
+        href={`/${firmId}/dashboard/payments`}
+        icon={<TruckIcon  className="!w-6 !h-6" />}
+      />
   </>
 )}
 

@@ -209,36 +209,18 @@ export async function GET(req: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "created_at";
     const sortOrder = searchParams.get("sortOrder") || "DESC";
 
-    if (!tenant_id || !customer_id) {
-      return NextResponse.json(
-        { error: getErrorMessage("unauthorized", lang) },
-        { status: 400 }
-      );
-    }
-    const [customerCheck] = await pool.query(
-      `SELECT 1
-       FROM bookings
-       WHERE tenant_id = ?
-         AND customer_id = ?
-         AND status != 'deleted'
-       LIMIT 1`,
-      [tenant_id, customer_id]
-    );
+    const whereClauses = ["p.status != 'deleted'"];
+    const params: any[] = [];
 
-    if ((customerCheck as any[]).length === 0) {
-      return NextResponse.json(
-        { error: getErrorMessage("notFound", lang) },
-        { status: 404 }
-      );
+    if (tenant_id) {
+      whereClauses.push("b.tenant_id = ?");
+      params.push(tenant_id);
     }
-    const whereClauses = [
-      "b.tenant_id = ?",
-      "b.customer_id = ?",
-      "b.status != 'deleted'",
-      "p.status != 'deleted'"
-    ];
 
-    const params: any[] = [tenant_id, customer_id];
+    if (customer_id) {
+      whereClauses.push("b.customer_id = ?");
+      params.push(customer_id);
+    }
 
     if (booking_id) {
       whereClauses.push("p.booking_id = ?");
@@ -250,18 +232,19 @@ export async function GET(req: NextRequest) {
       params.push(status);
     }
 
-    const where = whereClauses.join(" AND ");
+    const where = whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
     const [countRows] = await pool.query(
       `SELECT COUNT(*) AS count
        FROM payments p
        JOIN bookings b ON p.booking_id = b.id
-       WHERE ${where}`,
+       ${where}`,
       params
     );
 
     const total = (countRows as any[])[0]?.count || 0;
 
+    // جلب الدفوعات
     const [payments] = await pool.query(
       `SELECT 
           p.*,
@@ -269,7 +252,7 @@ export async function GET(req: NextRequest) {
           b.customer_id
        FROM payments p
        JOIN bookings b ON p.booking_id = b.id
-       WHERE ${where}
+       ${where}
        ORDER BY p.${sortBy} ${sortOrder}
        LIMIT ? OFFSET ?`,
       [...params, pageSize, (page - 1) * pageSize]
@@ -288,6 +271,7 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
 
 
 /**

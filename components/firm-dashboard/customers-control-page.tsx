@@ -51,7 +51,7 @@ import { TableSkeleton } from "@/lib/Skeletons";
 export type CustomerStatus = 'active' | 'deleted' | 'blacklisted';
 export type CustomerType = 'individual' | 'corporate';
 export type LoyaltyLevel = 'bronze' | 'silver' | 'gold' | 'vip';
-export type Gender = 'male' | 'female' | 'other';
+export type Gender = 'male' | 'female';
 export type IDType = 'id_card' | 'passport';
 
 export interface CustomerDB {
@@ -541,14 +541,14 @@ export default function CustomersPage() {
         </div>
       </section>
 
-        <Modal
+       <Modal
   isDismissable={false}
-  isOpen={editModal.isOpen}
-  onOpenChange={editModal.onOpenChange}
-  size="3xl"
-  scrollBehavior="inside"
+  isOpen={deleteModal.isOpen}        // ✅
+  onOpenChange={deleteModal.onOpenChange}
+  size="md"
   backdrop="blur"
 >
+
           <ModalContent className="bg-content1-light/95 dark:bg-content1-dark/95 transition-colors duration-300">
             {(onClose) => (
               <>
@@ -994,8 +994,17 @@ export default function CustomersPage() {
                       />
                     )}
 
-           
-
+           <div
+  className="
+    max-h-[70vh]
+    overflow-y-auto
+    pr-2
+    scrollbar-thin
+    scrollbar-thumb-gray-400
+    scrollbar-track-transparent
+  "
+>
+ <div className="w-full max-w-7xl mx-auto px-6 py-4 space-y-6">
                 <div className="grid gap-4 md:grid-cols-3">
                     <Input
   label="First Name"
@@ -1025,7 +1034,6 @@ export default function CustomersPage() {
   >
     <SelectItem key="male">{language === 'ar' ? 'ذكر' : 'Male'}</SelectItem>
     <SelectItem key="female">{language === 'ar' ? 'أنثى' : 'Female'}</SelectItem>
-    <SelectItem key="other">{language === 'ar' ? 'آخر' : 'Other'}</SelectItem>
   </Select>
 {!isEditing && (
   <Input
@@ -1039,7 +1047,7 @@ export default function CustomersPage() {
 <Input
   type="date"
   label={language === 'ar' ? 'تاريخ الميلاد' : 'Date of Birth'}
-  className="border p-2 rounded-lg w-full"
+  className=" p-2 rounded-lg w-full"
   value={formData.date_of_birth ? formData.date_of_birth.split("T")[0] : ""}
   onChange={e => updateForm('date_of_birth', e.target.value)}
 />
@@ -1091,7 +1099,7 @@ export default function CustomersPage() {
  <Input
   type="date"
   label={language === 'ar' ? 'تاريخ انتهاء الرخصة' : 'License Expiry Date'}
-  className="border p-2 rounded-lg w-full"
+  className=" p-2 rounded-lg w-full"
   value={formData.license_expiry_date ? formData.license_expiry_date.split("T")[0] : ""}
   onChange={e => updateForm('license_expiry_date', e.target.value)}
 />
@@ -1201,12 +1209,8 @@ export default function CustomersPage() {
   </div>
 </div>
 
-
-
 </div>
-
-
-                  {isEditing && (
+     {isEditing && (
                     <div className="grid gap-4 md:grid-cols-1">
                   <Select
   label={language === 'ar' ? 'الحالة' : 'Status'}
@@ -1231,10 +1235,7 @@ selectedKeys={formData.status ? [formData.status] : []}
 
                     </div>
                   )}
-                </ModalBody>
-
-                <ModalFooter>
-                  <Button
+  <Button
                     variant="light"
                     onPress={() => {
                       onClose();
@@ -1251,7 +1252,11 @@ selectedKeys={formData.status ? [formData.status] : []}
                   >
                     {language === 'ar' ? 'حفظ' : 'Save'}
                   </Button>
-                </ModalFooter>
+</div>
+</div>
+
+             
+                </ModalBody>
               </Form>
             </>
           )}

@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { addToast, Alert } from "@heroui/react";
+import { addToast, Alert,Input } from "@heroui/react";
 import {
   CalendarIcon,
   MapPinIcon,
@@ -34,6 +34,7 @@ interface Booking {
   start_date: string;
   end_date: string;
   total_amount: number;
+  late_fee_day: number;
   status: string;
   tenant_name: string;
 }
@@ -54,13 +55,18 @@ export default function CustomerBookingsPage() {
 
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-
-  const [paymentAmount, setPaymentAmount] = useState<number>(0);
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "bank_transfer" | "online">("cash");
-
-  const [isPartialPayment, setIsPartialPayment] = useState(false);
-  const [partialPaymentAmount, setPartialPaymentAmount] = useState<number>(0);
   const [paying, setPaying] = useState(false);
+
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<any[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+
+  const [payment, setPayment] = useState({
+    amount: 0,
+    method: "cash" as "cash" | "card" | "bank_transfer" | "online",
+    isPartial: false,
+    partialAmount: 0,
+  });
 
   // ---- Effects ----
   useEffect(() => {
@@ -71,7 +77,33 @@ export default function CustomerBookingsPage() {
     }
   }, [user]);
 
-  // ---- Handlers ----
+  /* ================= HELPERS ================= */
+  const calculateLateFee = (booking: Booking | null) => {
+    if (!booking) return 0;
+
+    const lateFeePerDay = booking.late_fee_day ?? 0;
+
+    const endDate = new Date(booking.end_date);
+    endDate.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const daysLate = Math.max(
+      0,
+      Math.floor((today.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24))
+    );
+
+    return lateFeePerDay * daysLate;
+  };
+
+  const lateFee = calculateLateFee(selectedBooking);
+
+  const paidAmount =
+  Number(lateFee || 0) +
+  (payment.isPartial && Number(payment.partialAmount) > 0
+    ? Number(payment.partialAmount)
+    : Number(payment.amount || 0));
 
   // Fetch Bookings
   const fetchBookings = async (customerId: number) => {
@@ -101,28 +133,35 @@ export default function CustomerBookingsPage() {
   };
 
   // Create Payment
-  const createPayment = async () => {
+ const createPayment = async () => {
     if (!selectedBooking) return;
+
     setPaying(true);
-
     try {
-      const partialAmountValue = isPartialPayment ? partialPaymentAmount : 0;
-      const mysqlDate = new Date().toISOString().slice(0, 19).replace("T", " ");
-      const isDeposit = isPartialPayment || paymentAmount < selectedBooking.total_amount;
+      const mysqlDate = new Date()
+        .toISOString()
+        .slice(0, 19)
+        .replace("T", " ");
 
-      const payload = {
-        tenant_id: selectedBooking.tenant_id,
-        customer_id: selectedBooking.customer_id,
-        booking_id: selectedBooking.id,
-        amount: Number(paymentAmount),
-        payment_method: paymentMethod,
-        status: "pending",
-        payment_date: mysqlDate,
-        is_deposit: isDeposit,
-        partial_amount: partialAmountValue,
-        split_details: null,
-        late_fee: 0,
-      };
+    const payload = {
+  tenant_id: selectedBooking.tenant_id,
+  customer_id: selectedBooking.customer_id,
+  booking_id: selectedBooking.id,
+  amount: paidAmount,
+  payment_method: payment.method,
+  is_partial: payment.isPartial,
+  partial_amount: payment.isPartial
+    ? Number(payment.partialAmount)
+    : 0,
+  status: "pending",
+  payment_date: mysqlDate,
+  is_deposit:
+    payment.isPartial ||
+    paidAmount < selectedBooking.total_amount,
+  paid_amount: paidAmount,
+  late_fee: lateFee,
+  split_details: null,
+};
 
       const res = await fetch(`${API_BASE_URL}/payments`, {
         method: "POST",
@@ -134,25 +173,24 @@ export default function CustomerBookingsPage() {
       });
 
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(
-          typeof data.error === "string"
-            ? data.error
-            : Object.values(data.error || {}).join("\n")
-        );
-      }
+      if (!res.ok) throw new Error(data.error || "Payment failed");
 
       addToast({
         title: language === "ar" ? "تم الدفع" : "Payment Added",
-        description: language === "ar" ? "تمت إضافة الدفعة بنجاح" : "Payment created successfully",
+        description:
+          language === "ar"
+            ? "تمت إضافة الدفعة بنجاح"
+            : "Payment created successfully",
         color: "success",
       });
 
-      // Reset payment modal
       setShowPaymentForm(false);
-      setPartialPaymentAmount(0);
-      setIsPartialPayment(false);
+      setPayment({
+        amount: 0,
+        method: "cash",
+        isPartial: false,
+        partialAmount: 0,
+      });
     } catch (err: any) {
       addToast({
         title: language === "ar" ? "فشل الدفع" : "Payment Failed",
@@ -163,7 +201,6 @@ export default function CustomerBookingsPage() {
       setPaying(false);
     }
   };
-
   // Cancel Booking
   const handleCancelBooking = async (bookingId: number) => {
     const confirmMsg = language === "ar" ? "هل أنت متأكد من إلغاء هذا الحجز؟" : "Are you sure you want to cancel this booking?";
@@ -198,6 +235,33 @@ export default function CustomerBookingsPage() {
       });
     }
   };
+
+const fetchPaymentDetails = async (
+  customerId: number,
+  tenantId: number,
+  bookingId: number
+) => {
+  setLoadingPayments(true);
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/payments?customer_id=${customerId}&tenant_id=${tenantId}&booking_id=${bookingId}`
+    );
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || "Failed to fetch payment details");
+
+    setPaymentDetails(data.data || []);
+    setShowPaymentDetails(true);
+  } catch (err: any) {
+    addToast({
+      title: language === "ar" ? "فشل التحميل" : "Load Failed",
+      description: err.message,
+      color: "danger",
+    });
+  } finally {
+    setLoadingPayments(false);
+  }
+};
 
   // ---- Render ----
   if (status === "loading" || loading)
@@ -247,7 +311,7 @@ export default function CustomerBookingsPage() {
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-2">
               <h2 className="text-lg font-bold text-gray-800 dark:text-white">
-{booking.vehicle_make} {booking.vehicle_model}</h2>
+                  {booking.vehicle_make} {booking.vehicle_model}</h2>
                   {booking.status !== "cancelled" && (
                     <button
                       onClick={() => handleCancelBooking(booking.id)}
@@ -257,19 +321,61 @@ export default function CustomerBookingsPage() {
                       <TrashIcon className="h-5 w-5" />
                     </button>
                   )}
-                  {booking.status === "confirmed" && (
-                    <button
-                      onClick={() => {
-                        setSelectedBooking(booking);
-                        setPaymentAmount(booking.total_amount);
-                        setPaymentMethod("cash");
-                        setShowPaymentForm(true);
-                      }}
-                      className="mt-3 w-full bg-cyan-600 hover:bg-cyan-700 text-white dark:bg-cyan-500 dark:hover:bg-cyan-600 font-semibold py-2 px-4 rounded-lg transition"
-                >
-                      {language === "ar" ? "إتمام الدفع" : "Pay Now"}
-                    </button>
+                 {booking.status !== "cancelled" && (
+  <div className="mt-4 flex gap-3">
+    
+    {/* Pay Icon */}
+    {booking.status === "confirmed" && (
+      <button
+        onClick={() => {
+          setSelectedBooking(booking);
+          setPayment({
+            amount: booking.total_amount,
+            method: "cash",
+            isPartial: false,
+            partialAmount: 0,
+          });
+          setShowPaymentForm(true);
+        }}
+        title={language === "ar" ? "إتمام الدفع" : "Pay Now"}
+        className="
+          p-3 rounded-xl
+          bg-cyan-600 hover:bg-cyan-700
+          text-white
+          shadow-md hover:shadow-lg
+          transition
+        "
+      >
+        💳
+      </button>
+    )}
+
+    {/* Payment Details Icon */}
+    <button
+      onClick={() =>
+        fetchPaymentDetails(
+          booking.customer_id,
+          booking.tenant_id,
+          booking.id
+        )
+      }
+      title={language === "ar" ? "تفاصيل الدفع" : "Payment Details"}
+      className="
+        p-3 rounded-xl
+        bg-gray-100 hover:bg-gray-200
+        dark:bg-gray-800 dark:hover:bg-gray-700
+        text-gray-700 dark:text-gray-200
+        shadow-sm hover:shadow-md
+        transition
+      "
+    >
+      📄
+    </button>
+
+  </div>
                   )}
+
+
                 </div>
 
                 {/* Details */}
@@ -310,52 +416,175 @@ export default function CustomerBookingsPage() {
         </div>
       </div>
 
-      {/* Payment Modal */}
+    {/* ================= PAYMENT MODAL ================= */}
       {showPaymentForm && selectedBooking && (
-       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-md relative text-gray-800 dark:text-gray-200">
-<h2 className="text-xl font-bold mb-4">{language === "ar" ? "إتمام الدفع" : "Complete Payment"}</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">
+              {language === "ar" ? "إتمام الدفع" : "Complete Payment"}
+            </h2>
 
-            {/* Amount */}
- <div className="flex flex-col mb-4">
-          <label className="text-sm font-medium">{language === 'ar' ? 'المبلغ' : 'Amount'}</label>
-          <span className="mt-1">{paymentAmount}</span>
+            <Input
+              label={language === "ar" ? "المبلغ" : "Amount"}
+              value={payment.amount.toString()}
+              isReadOnly
+            />
+
+            <Input
+              label={language === "ar" ? "غرامة التأخير" : "Late Fee"}
+              value={lateFee.toString()}
+              isReadOnly
+            />
+<label className="block mt-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+  {language === "ar" ? "طريقة الدفع" : "Payment Method"}
+</label>
+
+<select
+  required
+  value={payment.method}
+  onChange={(e) =>
+    setPayment((p) => ({
+      ...p,
+      method: e.target.value as any,
+    }))
+  }
+  className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-2"
+>
+  <option value="">{language === "ar" ? "اختر طريقة الدفع" : "Select Method"}</option>
+  <option value="cash">{language === "ar" ? "كاش" : "Cash"}</option>
+  <option value="card">{language === "ar" ? "بطاقة" : "Card"}</option>
+  <option value="bank_transfer">
+    {language === "ar" ? "تحويل بنكي" : "Bank Transfer"}
+  </option>
+  <option value="online">{language === "ar" ? "أونلاين" : "Online"}</option>
+</select>
+
+            <label className="flex items-center gap-2 my-3">
+              <input
+                type="checkbox"
+                checked={payment.isPartial}
+                onChange={(e) =>
+                  setPayment((p) => ({
+                    ...p,
+                    isPartial: e.target.checked,
+                  }))
+                }
+              />
+              {language === "ar" ? "دفع جزئي" : "Partial Payment"}
+            </label>
+
+            {payment.isPartial && (
+              <Input
+                type="number"
+                label={language === "ar" ? "المبلغ الجزئي" : "Partial Amount"}
+                value={payment.partialAmount.toString()}
+                onChange={(e) =>
+                  setPayment((p) => ({
+                    ...p,
+                    partialAmount: Number(e.target.value),
+                  }))
+                }
+              />
+            )}
+
+            <div className="text-lg font-bold mt-3">
+              Paid Amount: {paidAmount}
+            </div>
+
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setShowPaymentForm(false)}
+                className="px-4 py-2 bg-gray-300 rounded"
+              >
+                {language === "ar" ? "إلغاء" : "Cancel"}
+              </button>
+              <button
+                onClick={createPayment}
+                disabled={paying}
+                className="px-4 py-2 bg-cyan-600 text-white rounded"
+              >
+                {paying
+                  ? language === "ar"
+                    ? "جارٍ الدفع..."
+                    : "Paying..."
+                  : language === "ar"
+                  ? "دفع"
+                  : "Pay"}
+              </button>
+            </div>
+          </div>
         </div>
-             {/* Partial Payment */}
-        <label className="flex items-center mb-4 gap-2">
-          <input type="checkbox" checked={isPartialPayment} onChange={(e) => setIsPartialPayment(e.target.checked)} />
-          {language === "ar" ? "دفع جزئي" : "Partial Payment"}
-        </label>
+      )}
+{showPaymentDetails && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-md max-h-[80vh] flex flex-col">
+      <h2 className="text-xl font-bold mb-4">
+        {language === "ar" ? "تفاصيل الدفع" : "Payment Details"}
+      </h2>
 
-
-            {isPartialPayment && (
-          <label className="block mb-4">
-            {language === "ar" ? "المبلغ الجزئي" : "Partial Amount"}
-            <input type="number" value={partialPaymentAmount} onChange={(e) => setPartialPaymentAmount(Number(e.target.value))} max={paymentAmount} className="w-full mt-1 p-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200" />
-          </label>
+      <div className="flex-1 overflow-y-auto pr-2">
+        {loadingPayments ? (
+          <p>{language === "ar" ? "جارٍ التحميل..." : "Loading..."}</p>
+        ) : paymentDetails.length === 0 ? (
+          <p>
+            {language === "ar"
+              ? "لا توجد دفعات لهذا الحجز."
+              : "No payments found for this booking."}
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {paymentDetails.map((p) => (
+              <div
+                key={p.id}
+                className="border p-2 rounded bg-gray-50 dark:bg-gray-800"
+              >
+                <p>
+                  {language === "ar" ? "المبلغ المدفوع" : "Paid Amount"}: $
+                  {p.paid_amount}
+                </p>
+                <p>
+                  {language === "ar" ? "طريقة الدفع" : "Payment Method"}:{" "}
+                  {p.payment_method}
+                </p>
+                <p>
+                  {language === "ar" ? "حالة الدفع" : "Status"}: {p.status}
+                </p>
+                <p>
+                  {language === "ar" ? "تاريخ الدفع" : "Payment Date"}:{" "}
+                  {new Date(p.payment_date).toLocaleString()}
+                </p>
+                {p.late_fee > 0 && (
+                  <p>
+                    {language === "ar" ? "غرامة التأخير" : "Late Fee"}: $
+                    {p.late_fee}
+                  </p>
+                )}
+                {p.is_partial && (
+                  <p>
+                    {language === "ar" ? "دفع جزئي" : "Partial Payment"}: $
+                    {p.partial_amount}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
         )}
+      </div>
 
-     {/* Payment Method */}
-        <label className="block mb-4">
-          {language === "ar" ? "طريقة الدفع" : "Payment Method"}
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as "cash" | "card" | "bank_transfer" | "online")} className="w-full mt-1 p-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200">
-            <option value="cash">{language === "ar" ? "كاش" : "Cash"}</option>
-            <option value="card">{language === "ar" ? "بطاقة" : "Card"}</option>
-            <option value="bank_transfer">{language === "ar" ? "تحويل بنكي" : "Bank Transfer"}</option>
-            <option value="online">{language === "ar" ? "أونلاين" : "Online"}</option>
-          </select>
-        </label>
-
-        {/* Modal Buttons */}
-        <div className="flex justify-end gap-2">
-          <button onClick={() => { setShowPaymentForm(false); setIsPartialPayment(false); setPartialPaymentAmount(0); }} className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600">{language === "ar" ? "إلغاء" : "Cancel"}</button>
-          <button onClick={createPayment} disabled={paying} className="px-4 py-2 bg-cyan-600 dark:bg-cyan-500 text-white rounded-lg hover:bg-cyan-700 dark:hover:bg-cyan-600 disabled:opacity-50">
-            {paying ? (language === "ar" ? "جارٍ الدفع..." : "Paying...") : (language === "ar" ? "دفع" : "Pay")}
-          </button>
-        </div>
+      <div className="flex justify-end mt-4">
+        <button
+          onClick={() => setShowPaymentDetails(false)}
+          className="px-4 py-2 bg-gray-300 rounded"
+        >
+          {language === "ar" ? "إغلاق" : "Close"}
+        </button>
       </div>
     </div>
-  )}
-</div>
+  </div>
+)}
+
+
+    </div>
   );
+
 }

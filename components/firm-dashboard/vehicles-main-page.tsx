@@ -975,8 +975,18 @@ export default function VehiclesPage() {
       />
     )}
 
-  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
+    <div
+  className="
+    max-h-[70vh]
+    overflow-y-auto
+    pr-2
+    scrollbar-thin
+    scrollbar-thumb-gray-400
+    scrollbar-track-transparent
+  "
+>
+ <div className="w-full max-w-7xl mx-auto px-6 py-4 space-y-6">
+                <div className="grid gap-4 md:grid-cols-3">
   {/* ===== BASIC INFO ===== */}
   <Input
     label={language === "ar" ? "الماركة" : "Make"}
@@ -1189,13 +1199,11 @@ export default function VehiclesPage() {
   </div>
 
   </div>
-
- </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={() => { onClose(); resetVehicleForm(); }}>{language==='ar'?'إلغاء':'Cancel'}</Button>
+ <Button variant="light" onPress={() => { onClose(); resetVehicleForm(); }}>{language==='ar'?'إلغاء':'Cancel'}</Button>
                 <Button color="primary" type="submit" isLoading={loadingForm}>{language==='ar'?'حفظ':'Save'}</Button>
-              </ModalFooter>
+              
+ </div> </div> </div>
+              </ModalBody>
             </Form>
           )}
         </ModalContent>

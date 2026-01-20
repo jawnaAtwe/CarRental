@@ -78,17 +78,20 @@ const CustomerDashboardPage: React.FC = () => {
   }, [selectedTenantId]);
 
   // Fetch cars when branch selected
-  useEffect(() => {
-    if (!selectedTenantId || !selectedBranchId) return;
-    fetch(`${API_BASE_URL}/vehicles?tenant_id=${selectedTenantId}&branch_id=${selectedBranchId}&page=1&pageSize=100`)
-      .then(res => res.json())
-      .then(data => setAllCars(data.data || []))
-      .catch(err => console.error(err));
-  }, [selectedTenantId, selectedBranchId]);
+useEffect(() => {
+  if (!selectedTenantId || !selectedBranchId) return;
+
+  fetch(`${API_BASE_URL}/vehicles?tenant_id=${selectedTenantId}&branch_id=${selectedBranchId}&page=1&pageSize=100`)
+    .then(res => res.json())
+    .then(data => {
+      const availableCars = (data.data || []).filter((car: any) => car.status === 'available');
+      setAllCars(availableCars);
+    })
+    .catch(err => console.error(err));
+}, [selectedTenantId, selectedBranchId]);
 
   const filteredCars = selectedCompany && selectedBranch ? allCars : [];
 
-  // حساب عدد الأيام بين تاريخ البداية والنهاية
   const getNumberOfDays = () => {
     if (!pickupDate || !dropoffDate) return 0;
     const start = new Date(pickupDate);
@@ -97,7 +100,6 @@ const CustomerDashboardPage: React.FC = () => {
     return diffTime > 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : 0;
   };
 
-  // السعر الكلي لكل السيارات المختارة
   const totalPrice = selectedCars.reduce((sum, car) => sum + car.price_per_day * getNumberOfDays(), 0);
 
   const handleCarSelect = (car: Car) => {
@@ -106,7 +108,7 @@ const CustomerDashboardPage: React.FC = () => {
     } else {
       setSelectedCars(prev => [...prev, car]);
     }
-    setBookingMessage(null); // مسح الرسالة عند تغيير الاختيار
+    setBookingMessage(null); 
   };
 
   const handleBooking = async () => {

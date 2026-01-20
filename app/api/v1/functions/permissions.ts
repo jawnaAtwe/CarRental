@@ -1,6 +1,7 @@
 import { dbConnection } from './db';
 import { getToken } from "next-auth/jwt";
 import { NextRequest } from "next/server";
+import { isSuperAdmin } from "@/lib/auth";
 const secret = process.env.NEXTAUTH_SECRET;
 
 type UserContext = {
@@ -99,6 +100,9 @@ export async function hasTenantAccess(
   user: UserContext | null,
   tenant_id: number | string | null
 ): Promise<boolean> {
+
+  if(isSuperAdmin(user) )
+    return true;
   if (!user || !user.id || !tenant_id) return false;
 
   const normalizedTenant = String(tenant_id);
