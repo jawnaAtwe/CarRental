@@ -54,6 +54,7 @@ type BookingDB = {
   start_date: string;          
   end_date: string;  
   total_amount: number;
+  currency_code:string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   branch_name?: string | null;   
   branch_name_ar?: string | null;
@@ -66,7 +67,8 @@ type BookingForm = {
   branch_id?: number;
   customer_id?: number; 
   late_fee_day?: number;
-  vehicle_id?: number;  
+  vehicle_id?: number; 
+  currency_code?:string; 
   start_date: string;
   vehicle_name?: string; 
   end_date: string;
@@ -888,7 +890,9 @@ const daysLate = end ? Math.max(0, Math.floor((today.getTime() - end.getTime()) 
           <TableCell>{booking.vehicle_name || '-'}</TableCell>
           <TableCell>{language === 'ar' ? booking.branch_name_ar || '-' : booking.branch_name || '-'}</TableCell>
           <TableCell>{booking.status}</TableCell>
-          <TableCell className="text-right">{booking.total_amount} ₪</TableCell>
+        <TableCell className="text-right">
+  {booking.total_amount ?? 0} {booking.currency_code || "₪"}
+</TableCell>
 
           <TableCell className="flex items-center justify-end gap-2">
             <Button isIconOnly radius="full" variant="flat" color="default" onPress={() => fetchBookingDetails(booking.id)}  className="dark:text-gray-200 dark:border-gray-400 hover:bg-red-600/20">

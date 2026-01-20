@@ -173,7 +173,8 @@ export async function GET(req: NextRequest, { params }: any) {
           DATE_FORMAT(b.end_date, '%Y-%m-%d') AS end_date,
           c.full_name AS customer_name,
           CONCAT(v.make, ' ', v.model) AS vehicle_name,
-           br.name     AS branch_name,
+           br.name AS branch_name,
+            v.currency_code,
       br.name_ar  AS branch_name_ar
        FROM bookings b
        LEFT JOIN customers c ON b.customer_id = c.id

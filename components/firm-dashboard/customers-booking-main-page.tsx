@@ -37,6 +37,7 @@ interface Booking {
   late_fee_day: number;
   status: string;
   tenant_name: string;
+   currency_code: string;
 }
 
 // ---- Constants ----
@@ -391,7 +392,7 @@ const fetchPaymentDetails = async (
                 <div className="flex items-center gap-2 mb-1 text-gray-700 dark:text-gray-300">
               <StarIcon className="h-5 w-5 text-amber-400" />
               <span className="text-gray-800 dark:text-gray-200">
-                {language === "ar" ? "الإجمالي" : "Total"}: ${booking.total_amount}
+                {language === "ar" ? "الإجمالي" : "Total"}: {booking.total_amount} {booking.currency_code}
               </span>
             </div>
               <div
@@ -484,9 +485,12 @@ const fetchPaymentDetails = async (
               />
             )}
 
-            <div className="text-lg font-bold mt-3">
-              Paid Amount: {paidAmount}
-            </div>
+           <div className="text-lg font-bold mt-3">
+  {language === "ar" ? "المبلغ المدفوع" : "Paid Amount"}:
+  {" "}
+  {paidAmount} {selectedBooking.currency_code}
+</div>
+
 
             <div className="flex justify-end gap-2 mt-4">
               <button
@@ -535,10 +539,12 @@ const fetchPaymentDetails = async (
                 key={p.id}
                 className="border p-2 rounded bg-gray-50 dark:bg-gray-800"
               >
-                <p>
-                  {language === "ar" ? "المبلغ المدفوع" : "Paid Amount"}: $
-                  {p.paid_amount}
-                </p>
+               <p>
+  {language === "ar" ? "المبلغ المدفوع" : "Paid Amount"}:
+  {" "}
+  {p.paid_amount} {p.currency_code || selectedBooking?.currency_code}
+</p>
+
                 <p>
                   {language === "ar" ? "طريقة الدفع" : "Payment Method"}:{" "}
                   {p.payment_method}
@@ -552,14 +558,14 @@ const fetchPaymentDetails = async (
                 </p>
                 {p.late_fee > 0 && (
                   <p>
-                    {language === "ar" ? "غرامة التأخير" : "Late Fee"}: $
-                    {p.late_fee}
+                    {language === "ar" ? "غرامة التأخير" : "Late Fee"}:
+                    {p.late_fee} {p.currency_code || selectedBooking?.currency_code}
                   </p>
                 )}
                 {p.is_partial && (
                   <p>
-                    {language === "ar" ? "دفع جزئي" : "Partial Payment"}: $
-                    {p.partial_amount}
+                    {language === "ar" ? "دفع جزئي" : "Partial Payment"}: 
+                    {p.partial_amount} {p.currency_code || selectedBooking?.currency_code}
                   </p>
                 )}
               </div>

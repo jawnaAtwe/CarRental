@@ -246,17 +246,16 @@ export async function GET(req: NextRequest) {
         v.make AS vehicle_make,
         v.model AS vehicle_model,
         v.late_fee_day,
+        DATE_FORMAT(b.start_date, '%Y-%m-%d') AS start_date,
+        DATE_FORMAT(b.end_date, '%Y-%m-%d') AS end_date,
         CONCAT(v.make, ' ', v.model) AS vehicle_name,
         b.customer_id,
         c.full_name AS customer_name,
-        b.start_date,
-        b.end_date,
         b.status,
+         v.currency_code,
         b.total_amount,
         b.notes,
         b.created_at,
-           DATE_FORMAT(b.start_date, '%Y-%m-%d') AS start_date,
-          DATE_FORMAT(b.end_date, '%Y-%m-%d') AS end_date,
         b.updated_at
       FROM bookings b
       LEFT JOIN tenants t ON b.tenant_id = t.id
