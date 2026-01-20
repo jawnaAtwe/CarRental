@@ -123,6 +123,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       transmission,
       mileage,
       price_per_day,
+      price_per_week,
+      price_per_month,
+      price_per_year,
+      currency_code,
+      currency,
       status,
     } = payload;
 
@@ -198,6 +203,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     model,
     year,
     late_fee_day,
+    price_per_week,
+    price_per_month,
+    price_per_year,
+    currency_code,
+    currency,
     trim,
     category,
     license_plate,
@@ -211,7 +221,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     status,
     created_at
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, NOW())`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?,?, ?,?,?,?,?, ?, ?,?, ?, ?, ?, ?, ?, NOW())`,
   [
     tenant_id,
     branch_id || null,
@@ -219,6 +229,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     model || '',
     year || null,
     late_fee_day || null,
+    price_per_week|| null,
+    price_per_month|| null,
+    price_per_year|| null,
+    currency_code|| '',
+    currency|| '',
     trim || '',
     category || 'Economy',
     license_plate || '',

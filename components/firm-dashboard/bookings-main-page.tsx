@@ -424,11 +424,7 @@ const fetchVehicles = async () => {
 const lateFeePerDay = booking.late_fee_day ?? 0;
 const endDate = booking.end_date ? new Date(booking.end_date) : null;
 const today = new Date();
-today.setHours(0, 0, 0, 0); // اليوم الحالي عند منتصف الليل
-
 let end = endDate ? new Date(endDate) : null;
-if (end) end.setHours(0, 0, 0, 0); // تاريخ الانتهاء عند منتصف الليل
-
 const daysLate = end ? Math.max(0, Math.floor((today.getTime() - end.getTime()) / (1000 * 60 * 60 * 24))) : 0;
 
   setPaymentData({
@@ -1292,12 +1288,9 @@ const daysLate = end ? Math.max(0, Math.floor((today.getTime() - end.getTime()) 
           return '0';
         }
      const today = new Date();
-today.setHours(0, 0, 0, 0); // اليوم الحالي عند منتصف الليل
+     let end = endDate ? new Date(endDate) : null;
 
-let end = endDate ? new Date(endDate) : null;
-if (end) end.setHours(0, 0, 0, 0); // تاريخ الانتهاء عند منتصف الليل
-
-const daysLate = end ? Math.max(0, Math.floor((today.getTime() - end.getTime()) / (1000 * 60 * 60 * 24))) : 0;
+     const daysLate = end ? Math.max(0, Math.floor((today.getTime() - end.getTime()) / (1000 * 60 * 60 * 24))) : 0;
 
         return (lateFeePerDay * daysLate).toString();
       })()

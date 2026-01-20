@@ -10,6 +10,11 @@ interface Car {
   model: string;
   year: number;
   price_per_day: number;
+  price_per_week: number;
+  price_per_year:number;
+  price_per_month: number;
+  currency: string;
+  currency_code: string;
   image: string;
 }
 
@@ -100,7 +105,48 @@ useEffect(() => {
     return diffTime > 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : 0;
   };
 
-  const totalPrice = selectedCars.reduce((sum, car) => sum + car.price_per_day * getNumberOfDays(), 0);
+ 
+const calculateCarPrice = (car: Car, days: number): number => {
+  let total = 0;
+  let remainingDays = days;
+
+  // أسعار السيارة
+  const dayPrice = car.price_per_day ?? 0;
+  const weekPrice = car.price_per_week ?? 0;
+  const monthPrice = car.price_per_month ?? 0;
+  const yearPrice = car.price_per_year ?? 0;
+
+  // سنوات
+  if (remainingDays >= 365 && yearPrice > 0) {
+    const years = Math.floor(remainingDays / 365);
+    total += years * yearPrice;
+    remainingDays %= 365;
+  }
+
+  // شهور
+  if (remainingDays >= 30 && monthPrice > 0) {
+    const months = Math.floor(remainingDays / 30);
+    total += months * monthPrice;
+    remainingDays %= 30;
+  }
+
+  // أسابيع
+  if (remainingDays >= 7 && weekPrice > 0) {
+    const weeks = Math.floor(remainingDays / 7);
+    total += weeks * weekPrice;
+    remainingDays %= 7;
+  }
+
+  // أيام متبقية
+  total += remainingDays * dayPrice;
+
+  return total;
+};
+
+const totalPrice = selectedCars.reduce(
+  (sum, car) => sum + calculateCarPrice(car, getNumberOfDays()),
+  0
+);
 
   const handleCarSelect = (car: Car) => {
     if (selectedCars.find(c => c.id === car.id)) {
@@ -132,7 +178,7 @@ useEffect(() => {
           start_date: pickupDate,
           end_date: dropoffDate,
           status: "pending",
-          total_amount: car.price_per_day * getNumberOfDays(),
+          total_amount: calculateCarPrice(car, getNumberOfDays()),
           notes: "",
         };
 
@@ -293,7 +339,10 @@ useEffect(() => {
                   <div className="p-4 text-white">
                     <h3 className="text-lg font-bold">{car.make} {car.model}</h3>
                     <p className="text-gray-300">{car.year}</p>
-                    <p className="mt-2 font-bold text-amber-400">${car.price_per_day}/day</p>
+                  <p className="mt-2 font-bold text-amber-400">
+  {calculateCarPrice(car, 1)} {car.currency_code}/day
+</p>
+
                   </div>
                 </motion.div>
               ))}
@@ -321,20 +370,22 @@ useEffect(() => {
             {/* Selected Cars */}
             {selectedCars.length > 0 ? (
               <div className="mb-4">
-                {selectedCars.map(car => (
-                  <p key={car.id} className="text-white font-semibold">
-                    {car.make} {car.model} - ${car.price_per_day}/day × {getNumberOfDays()} days = ${car.price_per_day * getNumberOfDays()}
-                  </p>
-                ))}
+               {selectedCars.map(car => (
+  <p key={car.id} className="text-white font-semibold">
+    {car.make} {car.model} - {calculateCarPrice(car, getNumberOfDays())} {car.currency_code}
+  </p>
+))}
+
               </div>
             ) : (
               <p className="text-gray-200 mb-4">No cars selected</p>
             )}
 
             {/* Total Price */}
-            <p className="mb-4 font-bold text-center text-amber-400 text-lg">
-              Total Price: ${totalPrice}
-            </p>
+           <p className="mb-4 font-bold text-center text-amber-400 text-lg">
+  Total Price: {totalPrice} {selectedCars[0]?.currency_code || '₪'}
+</p>
+
 
             <button onClick={handleBooking} className="w-full bg-gradient-to-r from-amber-400 to-amber-600 text-black font-semibold rounded-xl py-3 hover:scale-105 transition-transform">
               Confirm Booking

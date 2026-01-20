@@ -255,6 +255,8 @@ export async function GET(req: NextRequest) {
         b.total_amount,
         b.notes,
         b.created_at,
+           DATE_FORMAT(b.start_date, '%Y-%m-%d') AS start_date,
+          DATE_FORMAT(b.end_date, '%Y-%m-%d') AS end_date,
         b.updated_at
       FROM bookings b
       LEFT JOIN tenants t ON b.tenant_id = t.id

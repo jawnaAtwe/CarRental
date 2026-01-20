@@ -79,23 +79,20 @@ export default function CustomerBookingsPage() {
 
   /* ================= HELPERS ================= */
   const calculateLateFee = (booking: Booking | null) => {
-    if (!booking) return 0;
+  if (!booking) return 0;
 
-    const lateFeePerDay = booking.late_fee_day ?? 0;
+  const lateFeePerDay = booking.late_fee_day ?? 0;
 
-    const endDate = new Date(booking.end_date);
-    endDate.setHours(0, 0, 0, 0);
+  const endDate = new Date(booking.end_date);
+  const today = new Date();
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const diffDays = Math.floor((today.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
 
-    const daysLate = Math.max(
-      0,
-      Math.floor((today.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24))
-    );
+  const daysLate = Math.max(0, diffDays ); 
 
-    return lateFeePerDay * daysLate;
-  };
+  return lateFeePerDay * daysLate;
+};
+
 
   const lateFee = calculateLateFee(selectedBooking);
 

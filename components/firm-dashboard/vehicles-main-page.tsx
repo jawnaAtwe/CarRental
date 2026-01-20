@@ -54,6 +54,11 @@ type VehicleDB = {
   trim?: string | null;
   category?: string | null;
   price_per_day: number;
+  price_per_week?: number | null;
+  price_per_month?: number | null;
+  price_per_year?: number | null;
+  currency?: string | null;     
+  currency_code?: string | null;  
   license_plate?: string | null;
   vin?: string | null;
   color?: string | null;
@@ -74,6 +79,11 @@ type VehicleForm = {
   trim?: string;
   category?: string;
   price_per_day: number;
+  price_per_week?: number;
+  price_per_month?: number;
+  price_per_year?: number;
+  currency?: string;     
+  currency_code?: string;  
   license_plate?: string;
   vin?: string;
   color?: string;
@@ -144,6 +154,11 @@ export default function VehiclesPage() {
     trim: '',
     category: '',
     price_per_day: 0,
+    price_per_week: 0,
+    price_per_month: 0,
+    price_per_year: 0,
+    currency: ''  , 
+    currency_code: '', 
     license_plate: '',
     vin: '',
     color: '',
@@ -358,6 +373,11 @@ export default function VehiclesPage() {
     trim: '',
     category: '',
     price_per_day: 0,
+    price_per_week:0,
+    price_per_month: 0,
+    price_per_year: 0,
+    currency: '',
+    currency_code: '',
     license_plate: '',
     vin: '',
     color: '',
@@ -409,6 +429,11 @@ export default function VehiclesPage() {
     mileage: vehicle.mileage ?? undefined,
 
     price_per_day: vehicle.price_per_day,
+    price_per_week: vehicle.price_per_week?? undefined,
+    price_per_month: vehicle.price_per_month?? undefined,
+    price_per_year: vehicle.price_per_year?? undefined,
+    currency: vehicle.currency??"",    
+    currency_code: vehicle.currency_code??"",   
     status: vehicle.status,
 
     branch_id: vehicle.branch_id ?? undefined,
@@ -867,8 +892,48 @@ export default function VehiclesPage() {
     </p>
     <p className="text-sm font-medium">
       {activeVehicle.price_per_day
-        ? `${activeVehicle.price_per_day} ₪`
+        ? `${activeVehicle.price_per_day} ${activeVehicle.currency_code || 'ILS'}`
         : '-'}
+    </p>
+  </div>
+
+
+   <div>
+    <p className="text-xs uppercase tracking-wide text-foreground/60">
+      {language === 'ar' ? 'السعر / أسبوع' : 'Price / Week'}
+    </p>
+    <p className="text-sm font-medium">
+      {activeVehicle.price_per_week
+        ? `${activeVehicle.price_per_week} ${activeVehicle.currency_code || 'ILS'}`
+        : '-'}
+    </p>
+  </div>
+   <div>
+    <p className="text-xs uppercase tracking-wide text-foreground/60">
+      {language === 'ar' ? 'السعر / شهر' : 'Price / Monthly'}
+    </p>
+    <p className="text-sm font-medium">
+      {activeVehicle.price_per_month
+        ? `${activeVehicle.price_per_month} ${activeVehicle.currency_code || 'ILS'}`
+        : '-'}
+    </p>
+  </div>
+  <div>
+    <p className="text-xs uppercase tracking-wide text-foreground/60">
+      {language === 'ar' ? 'السعر / سنة' : 'Price / Year'}
+    </p>
+    <p className="text-sm font-medium">
+      {activeVehicle.price_per_year
+        ? `${activeVehicle.price_per_year} ${activeVehicle.currency_code || 'ILS'}`
+        : '-'}
+    </p>
+  </div>
+   <div>
+    <p className="text-xs uppercase tracking-wide text-foreground/60">
+      {language === 'ar' ? 'العملة' : 'Currency'}
+    </p>
+    <p className="text-sm font-medium">
+      {activeVehicle.currency || activeVehicle.currency_code || '-'}
     </p>
   </div>
  <div>
@@ -877,7 +942,7 @@ export default function VehiclesPage() {
     </p>
     <p className="text-sm font-medium">
       {activeVehicle.late_fee_day
-        ? `${activeVehicle.late_fee_day} ₪`
+        ? `${activeVehicle.late_fee_day} ${activeVehicle.currency_code || 'ILS'}`
         : '-'}
     </p>
   </div>
@@ -1025,6 +1090,71 @@ export default function VehiclesPage() {
       }))
     }
   />
+  {/* السعر الأسبوعي */}
+<Input
+  label={language === "ar" ? "السعر / أسبوع" : "Price / Week"}
+  type="number"
+  value={formData.price_per_week?.toString() || ""}
+  onChange={e =>
+    setFormData(p => ({
+      ...p,
+      price_per_week: e.target.value === "" ? undefined : Number(e.target.value),
+    }))
+  }
+/>
+{/* السعر الشهري */}
+<Input
+  label={language === "ar" ? "السعر / شهر" : "Price / Month"}
+  type="number"
+  value={formData.price_per_month?.toString() || ""}
+  onChange={e =>
+    setFormData(p => ({
+      ...p,
+      price_per_month: e.target.value === "" ? undefined : Number(e.target.value),
+    }))
+  }
+/>
+{/* السعر السنوي */}
+<Input
+  label={language === "ar" ? "السعر / سنة" : "Price / Year"}
+  type="number"
+  value={formData.price_per_year?.toString() || ""}
+  onChange={e =>
+    setFormData(p => ({
+      ...p,
+      price_per_year: e.target.value === "" ? undefined : Number(e.target.value),
+    }))
+  }
+/>
+
+{/* العملة */}
+<Input
+  label={language === "ar" ? "كود العملة" : "Currency Code"}
+  type="text"
+  value={formData.currency_code || ""}
+  onChange={e =>
+    setFormData(p => ({
+      ...p,
+      currency_code: e.target.value,
+    }))
+  }
+  isRequired
+/>
+
+{/* العملة */}
+<Input
+  label={language === "ar" ? " العملة" : "Currency"}
+  type="text"
+  value={formData.currency || ""}
+  onChange={e =>
+    setFormData(p => ({
+      ...p,
+      currency: e.target.value,
+    }))
+  }
+  isRequired
+/>
+
 {/* ===== BRANCH ===== */}
 <Select
   label={language === "ar" ? "الفرع" : "Branch"}
