@@ -33,7 +33,6 @@ export interface Payment {
   amount: number;           // المبلغ الكامل
   paid_amount?: number;     // المدفوع
   partial_amount?: number;  // المدفوع جزئيًا
-  currency: string;
   status: PaymentStatus;
   created_at: string;
 }
@@ -49,6 +48,7 @@ type BookingDB = {
   start_date: string;
   end_date: string;
   total_amount: number;
+  currency_code: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   branch_name?: string | null;
   branch_name_ar?: string | null;
@@ -95,6 +95,7 @@ export default function PaymentsPage() {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingDetails, setBookingDetails] = useState<BookingDB | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
+  const [bookingCurrencies, setBookingCurrencies] = useState<Record<number, string>>({});
 
   const PAYMENT_STATUSES: PaymentStatus[] = [
   'pending',
@@ -102,6 +103,55 @@ export default function PaymentsPage() {
   'failed',
   'refunded',
 ];
+//////
+  useEffect(() => {
+  if (selectedTenantId) fetchPayments();
+  }, [page, selectedTenantId, language]);
+  
+  useEffect(() => {
+    fetchPayments();
+  }, [page]);
+
+  useEffect(() => {
+  if (user) setSessionLoaded(true);
+  }, [user]);
+  useEffect(() => {
+  payments.forEach(p => {
+    fetchBookingCurrency(p.booking_id);
+  });
+}, [payments]);
+
+  useEffect(() => {
+  if (sessionLoaded && isSuperAdmin) fetchTenants();
+  }, [sessionLoaded, isSuperAdmin]);
+
+  useEffect(() => {
+  if (!isSuperAdmin && user) setSelectedTenantId(user.tenantId);
+  }, [user, isSuperAdmin]);
+
+const fetchBookingCurrency = async (bookingId: number) => {
+  if (bookingCurrencies[bookingId]) return;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/bookings/${bookingId}`, {
+      headers: {
+        'accept-language': language,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!res.ok) throw new Error();
+
+    const data: BookingDB = await res.json();
+
+    setBookingCurrencies(prev => ({
+      ...prev,
+      [bookingId]: data.currency_code,
+    }));
+  } catch (e) {
+    console.error('Failed to fetch booking currency');
+  }
+};
 
   // ------------------- Fetch Payments -------------------
  const fetchPayments = async () => {
@@ -155,27 +205,6 @@ export default function PaymentsPage() {
     setTenantsLoading(false);
   }
 };
-//////
-  useEffect(() => {
-  if (selectedTenantId) fetchPayments();
-  }, [page, selectedTenantId, language]);
-  
-  useEffect(() => {
-    fetchPayments();
-  }, [page]);
-
-  useEffect(() => {
-  if (user) setSessionLoaded(true);
-  }, [user]);
-
-  useEffect(() => {
-  if (sessionLoaded && isSuperAdmin) fetchTenants();
-  }, [sessionLoaded, isSuperAdmin]);
-
-  useEffect(() => {
-  if (!isSuperAdmin && user) setSelectedTenantId(user.tenantId);
-  }, [user, isSuperAdmin]);
-
   // ------------------- Functions -------------------
   const openPaymentDetails = (payment: Payment) => {
     setActivePayment(payment);
@@ -255,9 +284,11 @@ const updatePaymentStatus = async (
 };
 
   const renderAmount = (payment: Payment) => {
-    const full = `${payment.amount} ${payment.currency}`;
-    const paid = payment.paid_amount ? `(${language === 'ar' ? 'مدفوع' : 'Paid'}: ${payment.paid_amount} ${payment.currency})` : '';
-    const partial = payment.partial_amount ? `(${language === 'ar' ? 'جزئي' : 'Partial'}: ${payment.partial_amount} ${payment.currency})` : '';
+    const currency = bookingCurrencies[payment.booking_id] || '';
+
+    const full = `${payment.amount} ${currency}`;
+    const paid = payment.paid_amount ? `(${language === 'ar' ? 'مدفوع' : 'Paid'}: ${payment.paid_amount} ${currency})` : '';
+    const partial = payment.partial_amount ? `(${language === 'ar' ? 'جزئي' : 'Partial'}: ${payment.partial_amount} ${currency})` : '';
     return (
       <span>
         {full} {paid} {partial}

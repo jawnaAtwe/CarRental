@@ -252,7 +252,7 @@ export async function GET(req: NextRequest) {
         b.customer_id,
         c.full_name AS customer_name,
         b.status,
-         v.currency_code,
+        v.currency_code,
         b.total_amount,
         b.notes,
         b.created_at,

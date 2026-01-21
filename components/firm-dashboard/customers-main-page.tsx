@@ -381,11 +381,7 @@ const totalPrice = selectedCars.reduce(
               <p className="text-gray-200 mb-4">No cars selected</p>
             )}
 
-            {/* Total Price */}
-           <p className="mb-4 font-bold text-center text-amber-400 text-lg">
-  Total Price: {totalPrice} {selectedCars[0]?.currency_code || '₪'}
-</p>
-
+         
 
             <button onClick={handleBooking} className="w-full bg-gradient-to-r from-amber-400 to-amber-600 text-black font-semibold rounded-xl py-3 hover:scale-105 transition-transform">
               Confirm Booking

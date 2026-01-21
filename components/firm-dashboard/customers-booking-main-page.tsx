@@ -37,7 +37,7 @@ interface Booking {
   late_fee_day: number;
   status: string;
   tenant_name: string;
-   currency_code: string;
+  currency_code: string;
 }
 
 // ---- Constants ----
@@ -350,13 +350,14 @@ const fetchPaymentDetails = async (
 
     {/* Payment Details Icon */}
     <button
-      onClick={() =>
+      onClick={() =>{
+        setSelectedBooking(booking);
         fetchPaymentDetails(
           booking.customer_id,
           booking.tenant_id,
           booking.id
         )
-      }
+      }}
       title={language === "ar" ? "تفاصيل الدفع" : "Payment Details"}
       className="
         p-3 rounded-xl
@@ -542,7 +543,7 @@ const fetchPaymentDetails = async (
                <p>
   {language === "ar" ? "المبلغ المدفوع" : "Paid Amount"}:
   {" "}
-  {p.paid_amount} {p.currency_code || selectedBooking?.currency_code}
+  {p.paid_amount} {selectedBooking?.currency_code}
 </p>
 
                 <p>
@@ -559,13 +560,13 @@ const fetchPaymentDetails = async (
                 {p.late_fee > 0 && (
                   <p>
                     {language === "ar" ? "غرامة التأخير" : "Late Fee"}:
-                    {p.late_fee} {p.currency_code || selectedBooking?.currency_code}
+                    {p.late_fee} {selectedBooking?.currency_code}
                   </p>
                 )}
                 {p.is_partial && (
                   <p>
                     {language === "ar" ? "دفع جزئي" : "Partial Payment"}: 
-                    {p.partial_amount} {p.currency_code || selectedBooking?.currency_code}
+                    {p.partial_amount} {selectedBooking?.currency_code}
                   </p>
                 )}
               </div>
