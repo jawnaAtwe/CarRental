@@ -312,7 +312,6 @@ export default function UsersPage() {
       body: JSON.stringify({ tenant_id: selectedTenantId }),
     });
 
-    // ناخد الرد من الباك
     let msg = '';
     try {
       const data = await response.json();
@@ -355,7 +354,6 @@ export default function UsersPage() {
       body: JSON.stringify({ tenant_id: selectedTenantId, user_ids: selectedUserIds }),
     });
 
-    // ناخد الرسالة من الباك
     let msg = '';
     try {
       const data = await response.json();

@@ -73,8 +73,9 @@ type InspectionForm = {
   checklist_results?: any;
   notes?: string;
   status: InspectionDB['status'];
-    inspected_by_name_ar?:string;
+  inspected_by_name_ar?:string;
   inspected_by_name?:string;
+  tenant_id?:number;
 };
 
 interface SessionUser {
@@ -100,6 +101,12 @@ export default function InspectionsPage() {
   const { data: session } = useSession();
   const user = session?.user as SessionUser | undefined;
 
+  const [sessionLoaded, setSessionLoaded] = useState(false);
+  const isSuperAdmin = user?.roleId === 9;
+  
+  const [selectedTenantId, setSelectedTenantId] = useState<number | undefined>(
+      !isSuperAdmin ? user?.tenantId : undefined
+    );
   // ------------------- States -------------------
   const [inspections, setInspections] = useState<InspectionDB[]>([]);
   const [loading, setLoading] = useState(false);
@@ -117,8 +124,9 @@ export default function InspectionsPage() {
     booking_id: 0,
     vehicle_id: 0,
     inspection_type: 'pre_rental',
-     vehicle_name: '',
-    status: 'pending'
+    vehicle_name: '',
+    status: 'pending',
+    tenant_id: selectedTenantId,
   });
   const [submitError, setSubmitError] = useState<string[] | string>([]);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
@@ -127,13 +135,24 @@ export default function InspectionsPage() {
   const deleteModal = useDisclosure();
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'single' | 'bulk'; id?: number } | null>(null);
   const [loadingFormData, setLoadingFormData] = useState(false);
+  const [tenants, setTenants] = useState<{id: number, name: string}[]>([]);
+  const [tenantsLoading, setTenantsLoading] = useState(false);
 
   // ------------------- Effects -------------------
 
   useEffect(() => {
-  if (!user) return;
-  fetchInspections();
-  }, [user, page, search, statusFilter]);
+    if (user) setSessionLoaded(true);
+  }, [user]);
+
+  useEffect(() => {
+  if (sessionLoaded && isSuperAdmin) fetchTenants();
+  }, [sessionLoaded, isSuperAdmin]);
+
+  useEffect(() => {
+  if (!isSuperAdmin && user) {
+    setSelectedTenantId(user.tenantId);
+  }
+  }, [user, isSuperAdmin]);
 
   useEffect(() => {
     if (editModal.isOpen && user) {
@@ -142,13 +161,41 @@ export default function InspectionsPage() {
     }
   }, [editModal.isOpen, user]);
 
+   useEffect(() => {
+    if (!isSuperAdmin && user?.tenantId) {
+    fetchInspections();
+     }
+    if (isSuperAdmin && selectedTenantId !== undefined) {
+    fetchInspections();
+    }
+    }, [language, page, search, statusFilter, sessionLoaded, selectedTenantId, user, isSuperAdmin]);
   // ------------------- Functions -------------------
+  const fetchTenants = async () => {
+    setTenantsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/tenants`, {
+        headers: { 'accept-language': language, 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to fetch tenants');
+      const data = await response.json();
+      setTenants(data.data || []);
+    } catch (error) {
+      console.error(error);
+      addToast({
+        title: language === 'ar' ? 'خطأ' : 'Error',
+        description: (error as any)?.message || 'Failed to fetch tenants',
+        color: 'danger'
+      });
+    } finally {
+      setTenantsLoading(false);
+    }
+  };
 
   const fetchBookings = async () => {
   try {
     if (!user) return;
 
-    const res = await fetch(`${API_BASE_URL}/bookings?tenant_id=${user?.tenantId}`);
+    const res = await fetch(`${API_BASE_URL}/bookings?tenant_id=${selectedTenantId}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
     const result = await res.json();
@@ -158,11 +205,11 @@ export default function InspectionsPage() {
     addToast({ title: 'Error', description: 'Failed to fetch bookings', color: 'danger' });
   }
 };
- const fetchVehicles = async () => {
+  const fetchVehicles = async () => {
   try {
     if (!user) return;
 
-    const res = await fetch(`${API_BASE_URL}/vehicles?tenant_id=${user?.tenantId}`);
+    const res = await fetch(`${API_BASE_URL}/vehicles?tenant_id=${selectedTenantId}`);
     
     if (!res.ok) {
       throw new Error(`HTTP error! status: ${res.status}`);
@@ -189,7 +236,7 @@ const fetchInspections = async () => {
     });
 
     const response = await fetch(
-      `${API_BASE_URL}/inspections?tenant_id=${user.tenantId}&${params}`,
+      `${API_BASE_URL}/inspections?tenant_id=${ selectedTenantId!.toString()}&${params}`,
       { headers: { 'accept-language': language } }
     );
 
@@ -217,7 +264,7 @@ const fetchInspectionDetails = async (id: number) => {
   setLoading(true);
 
   try {
-    const response = await fetch(`${API_BASE_URL}/inspections/${id}?tenant_id=${user.tenantId}`, {
+    const response = await fetch(`${API_BASE_URL}/inspections/${id}?tenant_id=${selectedTenantId!.toString()}`, {
       headers: { 'accept-language': language },
     });
 
@@ -366,7 +413,20 @@ const fetchInspectionDetails = async (id: number) => {
   return (
     <div className="min-h-screen px-4 py-8 md:px-8">
       <div className="mx-auto w-full space-y-8">
-
+      {isSuperAdmin && sessionLoaded && (
+        <Select
+          size="md"
+          label={language === 'ar' ? 'اختر الشركة' : 'Select Tenant'}
+          placeholder={language === 'ar' ? 'اختر الشركة' : 'Select Tenant'}
+          selectedKeys={selectedTenantId ? [String(selectedTenantId)] : []}
+          onChange={(e) => setSelectedTenantId(Number(e.target.value))}
+          isLoading={tenantsLoading}
+        >
+          {tenants.map((t) => (
+            <SelectItem key={t.id}>{t.name}</SelectItem>
+          ))}
+        </Select>
+      )}
         {/* ===== Header & Action Buttons ===== */}
         <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
