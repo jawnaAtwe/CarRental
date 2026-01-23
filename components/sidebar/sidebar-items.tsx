@@ -72,6 +72,16 @@ export const SidebarItems = ({
       href={`/${firmId}/dashboard/plans`}
       icon={<ClipboardDocumentIcon className="!w-6 !h-6" />}
     />
+    {(!isSuperAdmin(session?.user)) && (
+  <>
+  <SidebarItem
+      isActive={pathname === `/${firmId}/dashboard/inspections`}
+      title={lang(language, "sidebar.inspections")}
+      href={`/${firmId}/dashboard/inspections`}
+      icon={<ClipboardDocumentIcon className="!w-6 !h-6" />}
+    />
+ </>
+)}
   </>
 )}
 
@@ -85,6 +95,9 @@ export const SidebarItems = ({
     />
   </>
 )}
+
+
+
     </>
   );
 };
