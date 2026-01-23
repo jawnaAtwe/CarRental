@@ -1,7 +1,7 @@
 import React from "react";
 import { SidebarItem } from "./sidebar-item";
 import HomeIconMui from "@mui/icons-material/HomeRounded";
-import { UsersIcon,BuildingStorefrontIcon, TruckIcon } from "@heroicons/react/24/solid";
+import { UsersIcon,BuildingStorefrontIcon, TruckIcon ,ClipboardDocumentIcon, CurrencyDollarIcon} from "@heroicons/react/24/solid";
 import { lang } from "../Lang/lang";
 import { hasPermission, isSuperAdmin,hasRole } from "@/lib/auth";
 
@@ -64,8 +64,14 @@ export const SidebarItems = ({
         isActive={pathname.startsWith(`/${firmId}/dashboard/payments`)}
         title={lang(language, "sidebar.payments")}
         href={`/${firmId}/dashboard/payments`}
-        icon={<TruckIcon  className="!w-6 !h-6" />}
+        icon={<CurrencyDollarIcon  className="!w-6 !h-6" />}
       />
+        <SidebarItem
+      isActive={pathname === `/${firmId}/dashboard/plans`}
+      title={lang(language, "sidebar.plans")}
+      href={`/${firmId}/dashboard/plans`}
+      icon={<ClipboardDocumentIcon className="!w-6 !h-6" />}
+    />
   </>
 )}
 

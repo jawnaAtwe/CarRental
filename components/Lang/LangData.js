@@ -23,7 +23,7 @@ export const LangData = {
     "sidebar.Customers": "Customers",
     "sidebar.bookings": "bookings",
     "sidebar.payments": "payments",
-              
+     "sidebar.plans": "Plans",         
     // Dashboard page
     "dashboard.welcome": "Welcome",
     "dashboard.overview": "Here is an overview of your legal activity.",
@@ -147,7 +147,8 @@ export const LangData = {
     "sidebar.vehicles": "المركبات",
     "sidebar.Customers": "الزبائن",
     "sidebar.bookings": "الحجوزات",
-      "sidebar.payments": "المدفوعات",
+    "sidebar.payments": "المدفوعات",
+    "sidebar.plans": "الخطط",
     // Dashboard page
     "dashboard.welcome": "مرحباً",
     "dashboard.overview": "إليك نظرة عامة على نشاطك القانوني.",
