@@ -1,7 +1,7 @@
 import React from "react";
 import { SidebarItem } from "./sidebar-item";
 import HomeIconMui from "@mui/icons-material/HomeRounded";
-import { UsersIcon,BuildingStorefrontIcon, TruckIcon ,ClipboardDocumentIcon, CurrencyDollarIcon} from "@heroicons/react/24/solid";
+import { UsersIcon,BuildingStorefrontIcon,WrenchIcon , TruckIcon ,ClipboardDocumentIcon, CurrencyDollarIcon} from "@heroicons/react/24/solid";
 import { lang } from "../Lang/lang";
 import { hasPermission, isSuperAdmin,hasRole } from "@/lib/auth";
 
@@ -77,6 +77,12 @@ export const SidebarItems = ({
       title={lang(language, "sidebar.inspections")}
       href={`/${firmId}/dashboard/inspections`}
       icon={<ClipboardDocumentIcon className="!w-6 !h-6" />}
+    />
+     <SidebarItem
+      isActive={pathname === `/${firmId}/dashboard/maintenance`}
+      title={lang(language, "sidebar.maintenance")}
+      href={`/${firmId}/dashboard/maintenance`}
+      icon={<WrenchIcon  className="!w-6 !h-6" />}
     />
   </>
 )}

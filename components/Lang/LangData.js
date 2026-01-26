@@ -15,6 +15,7 @@ export const LangData = {
     "sidebar.hearings": "Hearings",
     "sidebar.documents": "Documents",
     "sidebar.billing": "Billing",
+    "sidebar.inspections":"inspections",
     "sidebar.team": "Team",
     "sidebar.ai_tools": "AI Tools",
     "sidebar.reports": "Reports",
@@ -23,6 +24,7 @@ export const LangData = {
     "sidebar.Customers": "Customers",
     "sidebar.bookings": "bookings",
     "sidebar.payments": "payments",
+    "sidebar.maintenance":"maintenance",
      "sidebar.plans": "Plans",         
     // Dashboard page
     "dashboard.welcome": "Welcome",
@@ -149,6 +151,8 @@ export const LangData = {
     "sidebar.bookings": "الحجوزات",
     "sidebar.payments": "المدفوعات",
     "sidebar.plans": "الخطط",
+    "sidebar.inspections":"الفحوصات",
+    "sidebar.maintenance":"الصيانة",
     // Dashboard page
     "dashboard.welcome": "مرحباً",
     "dashboard.overview": "إليك نظرة عامة على نشاطك القانوني.",

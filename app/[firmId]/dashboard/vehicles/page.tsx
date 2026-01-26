@@ -1,4 +1,4 @@
-import VehiclesMainPage from "@/components/firm-dashboard/vehicles-main-page";
+import VehiclesMainPage from "@/components/firm-dashboard/vehicles/page";
 
 export default function Page() {
   return <VehiclesMainPage />;
