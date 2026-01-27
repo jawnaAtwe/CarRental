@@ -140,7 +140,7 @@ export async function PUT(req: NextRequest, { params }: any) {
     const pool = await dbConnection();
     const user: any = await getUserData(req);
     const payload = await req.json();
-    const { subtotal, vat_rate, currency_code, notes, tenant_id } = payload;
+    const { subtotal, vat_rate, currency_code, notes, tenant_id ,status} = payload;
 
     if (!invoiceId) return NextResponse.json({ error: getInvoiceErrorMessage("invoiceNotFound", lang) }, { status: 400 });
     if (!tenant_id) return NextResponse.json({ error: getInvoiceErrorMessage("unauthorized", lang) }, { status: 400 });
@@ -168,20 +168,21 @@ export async function PUT(req: NextRequest, { params }: any) {
 
     if (currency_code) { fields.push("currency_code = ?"); values.push(currency_code); }
     if (notes) { fields.push("notes = ?"); values.push(notes); }
+      if (status) { fields.push("status = ?"); values.push(status); }
 
     await pool.query(`UPDATE invoices SET ${fields.join(", ")}, updated_at = NOW() WHERE id = ? AND tenant_id = ?`, [...values, invoiceId, tenant_id]);
-  // إرسال إيميل إذا تغيرت الحالة من draft إلى issued
-    if (status && invoice.status !== status && status === "issued") {
+    // إرسال إيميل إذا تغيرت الحالة من draft إلى issued
+    if (status === "issued") {
       const [customerRows] = await pool.query("SELECT email, full_name FROM customers WHERE id = ?", [invoice.customer_id]);
       const customer = (customerRows as any[])[0];
       if (customer?.email) {
         await sendEmail({
           to: customer.email,
           subject: lang === "ar" ? "تم إصدار فاتورتك" : "Your Invoice Has Been Issued",
-          text: lang === "ar"
-            ? `مرحباً ${customer.full_name}،\nتم إصدار فاتورتك رقم ${invoice.invoice_number}.\nالمبلغ الإجمالي: ${total_amount} ${currency_code}`
-            : `Hello ${customer.full_name},\nYour invoice ${invoice.invoice_number} has been issued.\nTotal amount: ${total_amount} ${currency_code}`
-        });
+       text: lang === "ar"
+  ? `مرحباً ${customer.full_name}،\nتم إصدار فاتورتك رقم ${invoice.invoice_number}.\nالمبلغ الإجمالي: ${total_amount} ${currency_code} (شامل الضريبة بنسبة ${vat_rate}%)`
+  : `Hello ${customer.full_name},\nYour invoice ${invoice.invoice_number} has been issued.\nTotal amount: ${total_amount} ${currency_code} (including VAT at ${vat_rate}%)`
+ });
       }
     }
     return NextResponse.json({ message: getInvoiceErrorMessage("updatedSuccess", lang) }, { status: 200 });

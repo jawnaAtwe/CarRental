@@ -128,6 +128,34 @@ if (!payload.end_date) {
     values.push(booking.id);
 
     await pool.query(`UPDATE bookings SET ${fields.join(", ")} WHERE id = ?`, values);
+   if (payload.status === "confirmed") {
+  try {
+    const [vehicleRows] = await pool.query(`SELECT currency_code FROM vehicles WHERE id = ?`, [booking.vehicle_id]);
+    const vehicle = (vehicleRows as any)[0];
+    const currency = vehicle?.currency_code || "";
+    const invoice_number = `INV-${Date.now()}`;
+    await pool.query(
+      `INSERT INTO invoices
+        (booking_id, customer_id, invoice_number,invoice_date,total_amount,subtotal,vat_rate, currency_code,vat_amount, is_auto_generated, tenant_id,status, created_at, updated_at)
+       VALUES (?, ?,?,  NOW(),?, ?, ?,?, ?,?,?,?, NOW(), NOW())`,
+      [
+        booking.id,
+        booking.customer_id,
+        invoice_number,
+        payload.total_amount || booking.total_amount,
+         payload.total_amount || booking.total_amount,
+         0,
+        currency,
+        0,
+        1,
+        booking.tenant_id || null,
+        'draft'
+      ]
+    );
+  } catch (err) {
+    console.error("Error calling invoices API:", err);
+  }
+}
 
     return NextResponse.json({ message: getBookingMessage("success", lang) }, { status: 200 });
 

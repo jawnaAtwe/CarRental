@@ -4,7 +4,7 @@ import HomeIconMui from "@mui/icons-material/HomeRounded";
 import { UsersIcon,BuildingStorefrontIcon,WrenchIcon , TruckIcon ,ClipboardDocumentIcon, CurrencyDollarIcon} from "@heroicons/react/24/solid";
 import { lang } from "../Lang/lang";
 import { hasPermission, isSuperAdmin,hasRole } from "@/lib/auth";
-
+import { ReceiptIcon } from "lucide-react";
 interface SidebarItemsProps {
   firmId: string;
   pathname: string;
@@ -72,7 +72,7 @@ export const SidebarItems = ({
       href={`/${firmId}/dashboard/plans`}
       icon={<ClipboardDocumentIcon className="!w-6 !h-6" />}
     />
-  <SidebarItem
+      <SidebarItem
       isActive={pathname === `/${firmId}/dashboard/inspections`}
       title={lang(language, "sidebar.inspections")}
       href={`/${firmId}/dashboard/inspections`}
@@ -84,6 +84,18 @@ export const SidebarItems = ({
       href={`/${firmId}/dashboard/maintenance`}
       icon={<WrenchIcon  className="!w-6 !h-6" />}
     />
+    <SidebarItem
+  isActive={pathname === `/${firmId}/dashboard/invoices`}
+  title={lang(language, "sidebar.invoices")}
+  href={`/${firmId}/dashboard/invoices`}
+  icon={<ReceiptIcon className="!w-6 !h-6" />}
+/>
+     <SidebarItem
+  isActive={pathname === `/${firmId}/dashboard/contracts`}
+  title={lang(language, "sidebar.contracts")}
+  href={`/${firmId}/dashboard/contracts`}
+  icon={<ClipboardDocumentIcon className="!w-6 !h-6" />}
+/>
   </>
 )}
 

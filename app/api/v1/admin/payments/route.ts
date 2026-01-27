@@ -128,11 +128,11 @@ export async function POST(req: NextRequest) {
     }
 
     const [bookings] = await pool.query(
-      `SELECT id FROM bookings 
+      `SELECT id,vehicle_id FROM bookings 
        WHERE id = ? AND tenant_id = ? AND status != 'deleted' AND customer_id = ?`,
       [booking_id, tenant_id, customer_id]
     );
-
+    const booking = (bookings as any)[0]; 
     if (!(bookings as any[]).length) {
       return NextResponse.json({ error: getErrorMessage("bookingNotFound", lang) }, { status: 404 });
     }
@@ -152,6 +152,34 @@ export async function POST(req: NextRequest) {
        VALUES (?, ?, ?,?, ?, ?, ?, ?, ?, ?, NOW())`,
       [booking_id, amount,paid_amount , payment_method, status, mysqlDate, depositFlag, partialAmountValue, splitDetailsJson, lateFeeValue]
     );
+   if (lateFeeValue> 0) {
+  try {
+    const [vehicleRows] = await pool.query(`SELECT currency_code FROM vehicles WHERE id = ?`, [booking.vehicle_id]);
+    const vehicle = (vehicleRows as any)[0];
+    const currency = vehicle?.currency_code || "";
+    const invoice_number = `INV-${Date.now()}`;
+    await pool.query(
+      `INSERT INTO invoices
+        (booking_id, customer_id, invoice_number,invoice_date,total_amount,subtotal,vat_rate, currency_code,vat_amount, is_auto_generated, tenant_id,status, created_at, updated_at)
+       VALUES (?, ?,?,  NOW(),?, ?, ?,?, ?,?,?,?, NOW(), NOW())`,
+      [
+        booking_id,
+        customer_id,
+        invoice_number,
+        lateFeeValue,
+        lateFeeValue,
+         0,
+        currency,
+        0,
+        1,
+        tenant_id || null,
+        'draft'
+      ]
+    );
+  } catch (err) {
+    console.error("Error calling invoices API:", err);
+  }
+}
 
     const payment_id = (result as any).insertId;
 
