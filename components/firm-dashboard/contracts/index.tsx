@@ -13,7 +13,8 @@ import { ContractTemplateViewModal } from './components/contract-templates/Contr
 import { DeleteConfirmModal } from './components/contract-templates/DeleteConfirmModal';
 import { LanguageFilter } from './components/contract-templates/LanguageFilter';
 import { ContractTemplateDB } from './hooks/types/contract-template.types';
-
+import { TenantSelector } from './components/contract-templates/TenantSelector';
+import { useTenants } from './hooks/useTenants';
 interface SessionUser {
   id: number;
   email: string;
@@ -31,7 +32,10 @@ export default function ContractTemplatesPage() {
   const user = session?.user as SessionUser | undefined;
 
   const [sessionLoaded, setSessionLoaded] = useState(false);
-  const selectedTenantId = user?.tenantId;
+  const isSuperAdmin = user?.roleId === 9;
+  const [selectedTenantId, setSelectedTenantId] = useState<number | undefined>(
+    !isSuperAdmin ? user?.tenantId : undefined
+  );
   const [search, setSearch] = useState('');
   const [languageFilter, setLanguageFilter] = useState('all');
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
@@ -40,7 +44,7 @@ export default function ContractTemplatesPage() {
   const editModal = useDisclosure();
   const viewModal = useDisclosure();
   const deleteModal = useDisclosure();
-
+ const { tenants, loading: tenantsLoading } = useTenants(language, sessionLoaded && isSuperAdmin);
   const { templates, loading, fetchTemplates, deleteTemplate } = useContractTemplates(
     language,
     selectedTenantId,
@@ -99,6 +103,16 @@ export default function ContractTemplatesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-100 via-gray-100 to-white dark:from-[#0B0F1A] dark:via-[#0B0F1A] dark:to-[#1C2030] px-4 py-8 md:px-8">
       <div className="mx-auto w-full space-y-8">
+         {/* Tenant Selector */}
+                {isSuperAdmin && sessionLoaded && (
+                  <TenantSelector
+                    language={language}
+                    selectedTenantId={selectedTenantId}
+                    tenants={tenants}
+                    loading={tenantsLoading}
+                    onChange={setSelectedTenantId}
+                  />
+                )}
         {/* Header */}
         <section className="flex flex-col gap-4 pt-5 md:flex-row md:items-center md:justify-between">
           <div>
@@ -114,8 +128,19 @@ export default function ContractTemplatesPage() {
             color="primary"
             startContent={<PlusIcon className="h-5 w-5 animate-pulse text-white drop-shadow-lg" />}
             onPress={openCreateTemplate}
-            className="relative overflow-hidden text-white font-extrabold tracking-wide rounded-3xl px-6 py-3 bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 shadow-xl transition-all duration-500 transform hover:scale-110 hover:shadow-2xl before:absolute before:top-0 before:left-[-75%] before:w-0 before:h-full before:bg-white/30 before:rotate-12 before:transition-all before:duration-500 hover:before:w-[200%]"
-          >
+         className="
+            relative overflow-hidden
+            text-white font-extrabold tracking-wide
+            rounded-3xl
+            px-6 py-3
+            bg-gradient-to-r from-green-500 via-lime-600 to-emerald-500
+            shadow-xl
+            transition-all duration-500
+            transform hover:scale-110 hover:shadow-2xl
+            before:absolute before:top-0 before:left-[-75%] before:w-0 before:h-full
+            before:bg-white/30 before:rotate-12 before:transition-all before:duration-500
+            hover:before:w-[200%]
+          "  >
             {language === 'ar' ? 'قالب جديد' : 'New Template'}
           </Button>
         </section>

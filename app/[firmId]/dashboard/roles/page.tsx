@@ -1,6 +1,6 @@
 
 
-import RolesMainPage from "@/components/firm-dashboard/roles-main-page";
+import RolesMainPage from "@/components/firm-dashboard/roles/page";
 
 
 

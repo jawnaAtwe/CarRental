@@ -102,7 +102,51 @@ if (!end_date) {
 
     const { valid, errors } = validateFields(payload, rules, lang);
     if (!valid) return NextResponse.json({ error: errors }, { status: 400 });
+    //check max booking
+const [rows]: any = await pool.query(
+  `
+  SELECT 
+    p.max_cars,
+    p.max_users,
+    p.max_bookings
+  FROM subscriptions s
+  JOIN plans p ON p.id = s.plan_id
+  WHERE s.tenant_id = ?
+    AND s.status = 'active'
+  ORDER BY s.id DESC
+  LIMIT 1
+  `,
+  [tenant_id]
+);
 
+if (rows.length) {
+  const { max_bookings } = rows[0];
+
+  const [bookingsCount]: any = await pool.query(
+    `
+    SELECT COUNT(*) AS total
+    FROM bookings
+    WHERE tenant_id = ?
+      AND status != 'deleted'
+    `,
+    [tenant_id]
+  );
+
+  const currentBookings = bookingsCount[0].total;
+
+  if (currentBookings >= max_bookings) {
+    return NextResponse.json(
+      {
+        error:
+          lang === "ar"
+            ? "تم تجاوز الحد الأقصى لعدد الحجوزات حسب الخطة الحالية"
+            : "Booking limit exceeded for the current plan",
+      },
+      { status: 403 }
+    );
+  }
+}
+///
     await pool.query(
       `INSERT INTO bookings (
         tenant_id, branch_id, vehicle_id, customer_id,

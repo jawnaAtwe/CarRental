@@ -193,7 +193,51 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         );
       }
     }
+//check if exceed max car number
 
+const [rows]: any = await pool.query(
+  `
+  SELECT 
+    p.max_cars,
+    p.max_users
+  FROM subscriptions s
+  JOIN plans p ON p.id = s.plan_id
+  WHERE s.tenant_id = ?
+    AND s.status = 'active'
+  ORDER BY s.id DESC
+  LIMIT 1
+  `,
+  [tenant_id]
+);
+
+if (rows.length) {
+  const { max_cars } = rows[0];
+
+  const [carsCount]: any = await pool.query(
+    `
+    SELECT COUNT(*) AS total
+    FROM vehicles
+    WHERE tenant_id = ?
+      AND status != 'deleted'
+    `,
+    [tenant_id]
+  );
+
+  const currentCars = carsCount[0].total;
+
+  if (currentCars >= max_cars) {
+    return NextResponse.json(
+      {
+        error:
+          lang === "ar"
+            ? "تم تجاوز الحد الأقصى لعدد المركبات حسب الخطة الحالية"
+            : "Vehicle limit exceeded for the current plan",
+      },
+      { status: 403 }
+    );
+  }
+}
+/////
   await pool.query(
   `INSERT INTO vehicles
   (

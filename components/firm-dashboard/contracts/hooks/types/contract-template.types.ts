@@ -19,3 +19,7 @@ export type ContractTemplateForm = {
   content?: string;
   status?: ContractTemplateStatus;
 };
+export interface Tenant {
+  id: number;
+  name: string;
+}

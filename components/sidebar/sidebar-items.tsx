@@ -96,6 +96,12 @@ export const SidebarItems = ({
   href={`/${firmId}/dashboard/contracts`}
   icon={<ClipboardDocumentIcon className="!w-6 !h-6" />}
 />
+  <SidebarItem
+  isActive={pathname === `/${firmId}/dashboard/rentalContracts`}
+  title={lang(language, "sidebar.rentalContracts")}
+  href={`/${firmId}/dashboard/rentalContracts`}
+  icon={<ClipboardDocumentIcon className="!w-6 !h-6" />}
+/>
   </>
 )}
 

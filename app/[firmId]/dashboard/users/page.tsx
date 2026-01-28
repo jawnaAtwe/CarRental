@@ -1,4 +1,4 @@
-import UsersMainPage from "@/components/firm-dashboard/users-main-page";
+import UsersMainPage from "@/components/firm-dashboard/users/page";
 
 export default function Page() {
   return <UsersMainPage />;

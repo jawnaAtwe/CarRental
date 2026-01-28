@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
+import { useLanguage } from "../context/LanguageContext";
 
 interface Car {
   id: number;
@@ -50,6 +51,7 @@ interface BookingMessage {
 }
 const API_BASE_URL = '/api/v1/admin';
 const CustomerDashboardPage: React.FC = () => {
+    const { language } = useLanguage();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [allCars, setAllCars] = useState<Car[]>([]);
@@ -339,9 +341,34 @@ const totalPrice = selectedCars.reduce(
                   <div className="p-4 text-white">
                     <h3 className="text-lg font-bold">{car.make} {car.model}</h3>
                     <p className="text-gray-300">{car.year}</p>
-                  <p className="mt-2 font-bold text-amber-400">
-  {calculateCarPrice(car, 1)} {car.currency_code}/day
-</p>
+                    
+          <div className="mt-2 space-y-1 text-sm">
+  <p className="font-bold text-amber-400">
+    {language === "ar" ? "السعر اليومي" : "Daily Price"}:
+    {" "}
+    {calculateCarPrice(car, 1)} {car.currency_code}
+    {language === "ar" ? " / يوم" : " / day"}
+  </p>
+  <p className="text-gray-200">
+    {language==="ar" ? "السعر الأسبوعي" : "Weekly Price"}:
+    {" "}
+    <b>{car.price_per_week} {car.currency_code}</b>
+    {language==="ar"  ? " / أسبوع" : " / week"}
+  </p>
+  <p className="text-gray-200">
+    {language === "ar" ? "السعر الشهري" : "Monthly Price"}:
+    {" "}
+    <b>{car.price_per_month} {car.currency_code}</b>
+    {language === "ar" ? " / شهر" : " / month"}
+  </p>
+
+  <p className="text-gray-200">
+    {language === "ar" ? "السعر السنوي" : "Yearly Price"}:
+    {" "}
+    <b>{car.price_per_year} {car.currency_code}</b>
+    {language === "ar" ? " / سنة" : " / year"}
+  </p>
+</div>
 
                   </div>
                 </motion.div>

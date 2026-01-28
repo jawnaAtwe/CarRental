@@ -153,7 +153,51 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // تشفير كلمة المرور
     const hashedPassword = await argon2.hash(password);
+/////////////////
+     const [rows]: any = await pool.query(
+  `
+  SELECT 
+    p.max_cars,
+    p.max_users
+  FROM subscriptions s
+  JOIN plans p ON p.id = s.plan_id
+  WHERE s.tenant_id = ?
+    AND s.status = 'active'
+  ORDER BY s.id DESC
+  LIMIT 1
+  `,
+  [tenant_id]
+);
 
+if (rows.length) {
+ const { max_cars, max_users } = rows[0];
+
+const [usersCount]: any = await pool.query(
+  `
+  SELECT COUNT(*) AS total
+  FROM users
+  WHERE tenant_id = ?
+    AND status != 'deleted'
+  `,
+  [tenant_id]
+);
+
+const currentEmployees = usersCount[0].total;
+if (currentEmployees >= max_users) {
+ return NextResponse.json(
+  {
+    error:
+      lang === "ar"
+        ? "تم تجاوز الحد الأقصى لعدد الموظفين حسب الخطة الحالية"
+        : "Employee limit exceeded for the current plan",
+  },
+  { status: 403 }
+);
+
+}
+}
+
+////////////////
     // إدخال المستخدم
     const [result]: any = await pool.query(
       `INSERT INTO users (tenant_id, role_id, full_name, full_name_ar, email, phone, password_hash, status, created_at)
