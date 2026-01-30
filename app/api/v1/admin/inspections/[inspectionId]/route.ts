@@ -63,50 +63,83 @@ export async function GET(req: NextRequest, { params }: any) {
     const { searchParams } = new URL(req.url);
     const tenant_id = searchParams.get("tenant_id");
 
-    if (!tenant_id) return NextResponse.json({ error: getErrorMessage("missingTenantId", lang) }, { status: 400 });
+    if (!tenant_id) {
+      return NextResponse.json(
+        { error: getErrorMessage("missingTenantId", lang) },
+        { status: 400 }
+      );
+    }
 
     if (process.env.NODE_ENV === "production") {
       const canView = await hasPermission(user, "view_inspections");
-      if (!canView) return NextResponse.json({ error: getErrorMessage("unauthorized", lang) }, { status: 401 });
+      if (!canView) {
+        return NextResponse.json(
+          { error: getErrorMessage("unauthorized", lang) },
+          { status: 401 }
+        );
+      }
 
       const allowed = await hasTenantAccess(user, tenant_id);
-      if (!allowed) return NextResponse.json({ error: getErrorMessage("unauthorized", lang) }, { status: 401 });
+      if (!allowed) {
+        return NextResponse.json(
+          { error: getErrorMessage("unauthorized", lang) },
+          { status: 401 }
+        );
+      }
     }
 
     const inspectionId = params.inspectionId;
-    if (!inspectionId) return NextResponse.json({ error: getErrorMessage("missingInspectionId", lang) }, { status: 400 });
+    if (!inspectionId) {
+      return NextResponse.json(
+        { error: getErrorMessage("missingInspectionId", lang) },
+        { status: 400 }
+      );
+    }
 
     const pool = await dbConnection();
-   const [rows] = await pool.query(
-  `SELECT 
-      i.*, 
-      u.full_name AS inspected_by_name,
-      u.full_name_ar AS inspected_by_name_ar, 
-      b.id AS booking_id,
-      c.id AS customer_id,
-      c.full_name AS customer_name,
-       DATE_FORMAT(i.inspection_date, '%Y-%m-%d') AS inspection_date, 
-      b.tenant_id
-   FROM inspections i
-   JOIN bookings b ON b.id = i.booking_id
-   JOIN customers c ON c.id = b.customer_id
-   LEFT JOIN users u ON u.id = i.inspected_by
-   WHERE i.id = ? AND i.status != 'deleted'`,
-  [inspectionId]
-);
+
+    const [rows] = await pool.query(
+      `
+      SELECT 
+        i.*, 
+        u.full_name AS inspected_by_name,
+        u.full_name_ar AS inspected_by_name_ar, 
+        b.id AS booking_id,
+        b.tenant_id,
+        c.id AS customer_id,
+        c.full_name AS customer_name,
+        DATE_FORMAT(i.inspection_date, '%Y-%m-%d') AS inspection_date
+      FROM inspections i
+      LEFT JOIN bookings b ON b.id = i.booking_id
+      LEFT JOIN customers c ON c.id = b.customer_id
+      LEFT JOIN users u ON u.id = i.inspected_by
+      WHERE i.id = ?
+        AND i.status != 'deleted'
+        AND (b.tenant_id = ? OR i.booking_id IS NULL)
+      `,
+      [inspectionId, tenant_id]
+    );
 
     const inspection = (rows as any[])[0];
-    if (!inspection) return NextResponse.json({ error: getErrorMessage("inspectionNotFound", lang) }, { status: 404 });
-
-    if (!(await hasTenantAccess(user, inspection.tenant_id))) return NextResponse.json({ error: getErrorMessage("unauthorized", lang) }, { status: 401 });
+    if (!inspection) {
+      return NextResponse.json(
+        { error: getErrorMessage("inspectionNotFound", lang) },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ data: inspection }, { status: 200 });
+
   } catch (error) {
     const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
     console.error("GET inspection error:", error);
-    return NextResponse.json({ error: getErrorMessage("serverError", lang) }, { status: 500 });
+    return NextResponse.json(
+      { error: getErrorMessage("serverError", lang) },
+      { status: 500 }
+    );
   }
 }
+
 
 /**
  * PUT /api/v1/admin/inspections/[inspectionId]
@@ -146,9 +179,13 @@ export async function PUT(req: NextRequest, { params }: any) {
     const user: any = await getUserData(req);
     const inspectionId = params.inspectionId;
 
-    if (!inspectionId) return NextResponse.json({ error: getErrorMessage("missingInspectionId", lang) }, { status: 400 });
+    if (!inspectionId) {
+      return NextResponse.json({ error: getErrorMessage("missingInspectionId", lang) }, { status: 400 });
+    }
 
-    if (!(await hasPermission(user, "edit_inspections"))) return NextResponse.json({ error: getErrorMessage("unauthorized", lang) }, { status: 401 });
+    if (!(await hasPermission(user, "edit_inspections"))) {
+      return NextResponse.json({ error: getErrorMessage("unauthorized", lang) }, { status: 401 });
+    }
 
     const payload = await req.json();
     const { inspection_date, odometer, fuel_level, checklist_results, notes } = payload;
@@ -166,8 +203,10 @@ export async function PUT(req: NextRequest, { params }: any) {
 
     const pool = await dbConnection();
     const [rows] = await pool.query(
-      `SELECT i.*, b.tenant_id FROM inspections i
-       JOIN bookings b ON b.id = i.booking_id
+      `SELECT i.*, COALESCE(b.tenant_id, v.tenant_id) AS tenant_id
+       FROM inspections i
+       LEFT JOIN bookings b ON b.id = i.booking_id
+       LEFT JOIN vehicles v ON v.id = i.vehicle_id
        WHERE i.id = ? AND i.status != 'deleted'`,
       [inspectionId]
     );
@@ -175,16 +214,18 @@ export async function PUT(req: NextRequest, { params }: any) {
     const inspection = (rows as any[])[0];
     if (!inspection) return NextResponse.json({ error: getErrorMessage("inspectionNotFound", lang) }, { status: 404 });
 
-    if (!(await hasTenantAccess(user, inspection.tenant_id))) return NextResponse.json({ error: getErrorMessage("unauthorized", lang) }, { status: 401 });
+    if (!(await hasTenantAccess(user, inspection.tenant_id))) {
+      return NextResponse.json({ error: getErrorMessage("unauthorized", lang) }, { status: 401 });
+    }
 
     const fields: string[] = [];
     const values: any[] = [];
-if (inspection_date) {
-  const mysqlDate = inspection_date.split('T')[0]; 
-  fields.push("inspection_date = ?");
-  values.push(mysqlDate);
-}
 
+    if (inspection_date) {
+      const mysqlDate = inspection_date.split('T')[0];
+      fields.push("inspection_date = ?");
+      values.push(mysqlDate);
+    }
 
     if (odometer !== undefined) { fields.push("odometer = ?"); values.push(odometer); }
     if (fuel_level !== undefined) { fields.push("fuel_level = ?"); values.push(fuel_level); }
@@ -202,6 +243,7 @@ if (inspection_date) {
     return NextResponse.json({ error: getErrorMessage("serverError", lang) }, { status: 500 });
   }
 }
+
 /**
  * DELETE /api/v1/admin/inspections/[inspectionId]
  *
@@ -233,21 +275,33 @@ export async function DELETE(req: NextRequest, { params }: any) {
     const user: any = await getUserData(req);
     const inspectionId = params.inspectionId;
 
-    if (!inspectionId) return NextResponse.json({ error: getErrorMessage("missingInspectionId", lang) }, { status: 400 });
-    if (!(await hasPermission(user, "delete_inspections"))) return NextResponse.json({ error: getErrorMessage("unauthorized", lang) }, { status: 401 });
+    if (!inspectionId) {
+      return NextResponse.json({ error: getErrorMessage("missingInspectionId", lang) }, { status: 400 });
+    }
+
+    if (!(await hasPermission(user, "delete_inspections"))) {
+      return NextResponse.json({ error: getErrorMessage("unauthorized", lang) }, { status: 401 });
+    }
 
     const [rows] = await pool.query(
-      `SELECT i.*, b.tenant_id FROM inspections i
-       JOIN bookings b ON b.id = i.booking_id
+      `SELECT i.*, COALESCE(b.tenant_id, v.tenant_id) AS tenant_id
+       FROM inspections i
+       LEFT JOIN bookings b ON b.id = i.booking_id
+       LEFT JOIN vehicles v ON v.id = i.vehicle_id
        WHERE i.id = ? AND i.status != 'deleted'`,
       [inspectionId]
     );
 
     const inspection = (rows as any[])[0];
-    if (!inspection) return NextResponse.json({ error: getErrorMessage("inspectionNotFound", lang) }, { status: 404 });
+    if (!inspection) {
+      return NextResponse.json({ error: getErrorMessage("inspectionNotFound", lang) }, { status: 404 });
+    }
 
-    if (!(await hasTenantAccess(user, inspection.tenant_id))) return NextResponse.json({ error: getErrorMessage("unauthorized", lang) }, { status: 401 });
+    if (!(await hasTenantAccess(user, inspection.tenant_id))) {
+      return NextResponse.json({ error: getErrorMessage("unauthorized", lang) }, { status: 401 });
+    }
 
+    // Soft delete
     await pool.query(`UPDATE inspections SET status = 'deleted' WHERE id = ?`, [inspectionId]);
 
     return NextResponse.json({ message: getErrorMessage("deletedSuccess", lang) }, { status: 200 });
@@ -257,3 +311,4 @@ export async function DELETE(req: NextRequest, { params }: any) {
     return NextResponse.json({ error: getErrorMessage("serverError", lang) }, { status: 500 });
   }
 }
+

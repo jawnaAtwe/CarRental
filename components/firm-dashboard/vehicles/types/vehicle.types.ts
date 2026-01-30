@@ -1,5 +1,7 @@
 // types/vehicle.types.ts
 
+export type VehicleStatus = 'available' | 'rented' | 'maintenance' | 'reserved' | 'deleted';
+
 export type VehicleDB = {
   id: number;
   tenant_id: number;
@@ -14,8 +16,8 @@ export type VehicleDB = {
   price_per_week?: number | null;
   price_per_month?: number | null;
   price_per_year?: number | null;
-  currency?: string | null;     
-  currency_code?: string | null;  
+  currency?: string | null;
+  currency_code?: string | null;
   license_plate?: string | null;
   vin?: string | null;
   color?: string | null;
@@ -23,7 +25,7 @@ export type VehicleDB = {
   fuel_type?: string | null;
   transmission?: string | null;
   mileage?: number | null;
-  status: 'available' | 'rented' | 'maintenance' | 'reserved' | 'deleted';
+  status: VehicleStatus;
   created_at?: string | null;
 };
 
@@ -39,8 +41,6 @@ export type VehicleForm = {
   price_per_week?: number;
   price_per_month?: number;
   price_per_year?: number;
-  currency?: string;     
-  currency_code?: string;  
   license_plate?: string;
   vin?: string;
   color?: string;
@@ -48,9 +48,21 @@ export type VehicleForm = {
   fuel_type?: string;
   transmission?: string;
   mileage?: number;
-  status: VehicleDB['status'];
+  status: VehicleStatus;
   branch_id?: number;
-  tenant_id?: number;
+};
+
+export type Tenant = {
+  id: number;
+  name: string;
+  currency?: string;
+  currency_code?: string;
+};
+
+export type Branch = {
+  id: number;
+  name: string;
+  name_ar: string;
 };
 
 export interface SessionUser {
@@ -62,4 +74,9 @@ export interface SessionUser {
   permissions: string[];
   tenantId: number;
   roleId: number;
+}
+
+export interface TenantCurrency {
+  currency: string;
+  currency_code: string;
 }

@@ -11,12 +11,31 @@ export const rentalContractService = {
   },
 
   async fetchContractById(id: number, tenantId: number, language: string) {
-    const response = await fetch(`${API_BASE_URL}/rental-contracts/${id}?tenant_id=${tenantId}`, {
-      headers: { 'accept-language': language },
-    });
-    if (!response.ok) throw new Error(response.statusText);
-    return response.json();
-  },
+  const response = await fetch(
+    `${API_BASE_URL}/rental-contracts/${id}?tenant_id=${tenantId}`,
+    {
+      headers: {
+        "accept-language": language,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to download contract PDF");
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `contract_${id}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+},
 
   async fetchBookingById(bookingId: number, tenantId: number, language: string) {
     const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}?tenant_id=${tenantId}`, {

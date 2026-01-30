@@ -166,8 +166,7 @@ export async function POST(req: NextRequest) {
       !booking_id ||
       !customer_id ||
       !vehicle_id ||
-      !template_id ||
-      !pdf_path
+      !template_id 
     ) {
       return NextResponse.json(
         { error: getErrorMessage("missingRequiredFields", lang) },
@@ -194,8 +193,8 @@ export async function POST(req: NextRequest) {
     await pool.query(
       `
       INSERT INTO rental_contracts
-      (tenant_id, booking_id, customer_id, vehicle_id, template_id, contract_number, pdf_path, status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', NOW())
+      (tenant_id, booking_id, customer_id, vehicle_id, template_id, contract_number, status, created_at)
+      VALUES (?, ?, ?, ?, ?, ?,  'draft', NOW())
       `,
       [
         tenant_id,
@@ -204,7 +203,6 @@ export async function POST(req: NextRequest) {
         vehicle_id,
         template_id,
         contract_number || null,
-        pdf_path,
       ]
     );
 

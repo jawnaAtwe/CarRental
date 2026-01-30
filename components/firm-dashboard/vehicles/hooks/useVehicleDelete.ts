@@ -7,80 +7,89 @@ import { API_BASE_URL } from '../constants/vehicle.constants';
 export const useVehicleDelete = () => {
   const [loading, setLoading] = useState(false);
 
-  const handleDeleteVehicle = async (
+  const deleteVehicle = async (
     id: number,
-    selectedTenantId: number | undefined,
+    tenantId: number | undefined,
     language: string,
     onSuccess?: () => void
   ) => {
+    if (!tenantId) return;
+
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/vehicles/${id}`, {
         method: 'DELETE',
-        headers: { 'accept-language': language, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant_id: selectedTenantId }),
+        headers: {
+          'accept-language': language,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tenant_id: tenantId }),
       });
+
       if (!response.ok) throw new Error(await response.text());
-      
+
       addToast({
-        title: language==='ar'?'تم الحذف':'Deleted', 
-        description:'', 
-        color:'success'
+        title: language === 'ar' ? 'تم الحذف' : 'Deleted',
+        description: '',
+        color: 'success',
       });
-      
+
       onSuccess?.();
-    } catch(err:any){
-      console.error(err); 
+    } catch (err: any) {
+      console.error('Error deleting vehicle:', err);
       addToast({
-        title:'Error', 
-        description: err?.message, 
-        color:'danger'
+        title: 'Error',
+        description: err?.message,
+        color: 'danger',
       });
-    } finally { 
-      setLoading(false); 
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleBulkDeleteVehicles = async (
-    selectedKeys: Set<string>,
-    selectedTenantId: number | undefined,
+  const bulkDeleteVehicles = async (
+    vehicleIds: number[],
+    tenantId: number | undefined,
     language: string,
     onSuccess?: () => void
   ) => {
-    const selectedIds = Array.from(selectedKeys).map(k=>Number(k));
-    if (!selectedIds.length) return;
-    
+    if (!tenantId || !vehicleIds.length) return;
+
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/vehicles`, {
         method: 'DELETE',
-        headers: { 'accept-language': language, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant_id: selectedTenantId, vehicle_ids: selectedIds }),
+        headers: {
+          'accept-language': language,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tenant_id: tenantId, vehicle_ids: vehicleIds }),
       });
+
       if (!response.ok) throw new Error(await response.text());
-      
+
       addToast({
-        title: language==='ar'?'تم الحذف':'Deleted', 
-        description:'', 
-        color:'success'
+        title: language === 'ar' ? 'تم الحذف' : 'Deleted',
+        description: '',
+        color: 'success',
       });
-      
+
       onSuccess?.();
-    } catch(err:any){
-      console.error(err); 
+    } catch (err: any) {
+      console.error('Error bulk deleting vehicles:', err);
       addToast({
-        title:'Error', 
-        description: err?.message, 
-        color:'danger'
+        title: 'Error',
+        description: err?.message,
+        color: 'danger',
       });
-    } finally { 
-      setLoading(false); 
+    } finally {
+      setLoading(false);
     }
   };
 
   return {
     loading,
-    handleDeleteVehicle,
-    handleBulkDeleteVehicles,
+    deleteVehicle,
+    bulkDeleteVehicles,
   };
 };

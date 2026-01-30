@@ -198,7 +198,7 @@ export const RentalContractForm = ({
               placeholder={language === 'ar' ? 'اختياري' : 'Optional'}
             />
 
-            <Input
+            {/* <Input
               className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 rounded-lg"
               label={language === 'ar' ? 'مسار ملف PDF' : 'PDF Path'}
               variant="faded"
@@ -207,7 +207,7 @@ export const RentalContractForm = ({
               onChange={(e) => onChange('pdf_path', e.target.value)}
               isRequired={!isEditing}
               placeholder={language === 'ar' ? 'مثال: /contracts/contract_123.pdf' : 'Example: /contracts/contract_123.pdf'}
-            />
+            /> */}
 
             {isEditing && (
               <Select

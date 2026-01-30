@@ -79,7 +79,9 @@ export async function GET(req: NextRequest, { params }: any) {
         max_users,
         status,
         created_at,
-        updated_at
+        updated_at,
+        currency,
+        currency_code
       FROM tenants
       WHERE id = ?
         AND status != 'deleted'

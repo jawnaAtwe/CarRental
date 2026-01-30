@@ -80,32 +80,27 @@ export async function GET(req: NextRequest) {
     if (process.env.NODE_ENV === "production") {
       const canView = await hasPermission(user, "view_inspections");
       if (!canView) {
-        return NextResponse.json(
-          { error: messages("unauthorized", lang) },
-          { status: 401 }
-        );
+        return NextResponse.json({ error: messages("unauthorized", lang) }, { status: 401 });
       }
     }
 
     const { searchParams } = new URL(req.url);
     const tenant_id = searchParams.get("tenant_id");
     const booking_id = searchParams.get("booking_id");
-    const status = searchParams.get("status"); 
+    const status = searchParams.get("status");
     const search = searchParams.get("search")?.trim();
     const page = Number(searchParams.get("page") || 1);
     const pageSize = Number(searchParams.get("pageSize") || 20);
 
+    // تحقق من صلاحية tenant
     if (process.env.NODE_ENV === "production" && tenant_id) {
       const allowed = await hasTenantAccess(user, tenant_id);
       if (!allowed) {
-        return NextResponse.json(
-          { error: messages("unauthorized", lang) },
-          { status: 401 }
-        );
+        return NextResponse.json({ error: messages("unauthorized", lang) }, { status: 401 });
       }
     }
 
-    // ---------------- WHERE ----------------
+    /* ================= WHERE ================= */
     let where = "i.status != 'deleted'";
     const params: any[] = [];
 
@@ -115,30 +110,29 @@ export async function GET(req: NextRequest) {
     }
 
     if (tenant_id) {
-      where += " AND b.tenant_id = ?";
+      // tenant من السيارة إذا ما في booking
+      where += " AND (v.tenant_id = ?)";
       params.push(tenant_id);
     }
 
-  
     if (status && ["pending", "completed"].includes(status)) {
       where += " AND i.status = ?";
       params.push(status);
     }
 
-  
     if (search) {
       where += " AND (v.make LIKE ? OR i.inspection_type LIKE ?)";
       const term = `%${search}%`;
       params.push(term, term);
     }
 
-    // ---------------- COUNT ----------------
+    /* ================= COUNT ================= */
     const [countRows] = await pool.query(
       `
       SELECT COUNT(*) AS count
       FROM inspections i
-      JOIN bookings b ON b.id = i.booking_id
       JOIN vehicles v ON v.id = i.vehicle_id
+      LEFT JOIN bookings b ON b.id = i.booking_id
       WHERE ${where}
       `,
       params
@@ -147,7 +141,7 @@ export async function GET(req: NextRequest) {
     const count = (countRows as any[])[0]?.count || 0;
     const totalPages = Math.ceil(count / pageSize);
 
-    // ---------------- FETCH ----------------
+    /* ================= FETCH ================= */
     const [rows] = await pool.query(
       `
       SELECT 
@@ -156,11 +150,12 @@ export async function GET(req: NextRequest) {
         u.full_name_ar AS inspected_by_name_ar,
         v.make AS vehicle_name,
         v.id AS vehicle_id,
-        DATE_FORMAT(i.inspection_date, '%Y-%m-%d') AS inspection_date, 
+        v.tenant_id AS vehicle_tenant_id,
+        DATE_FORMAT(i.inspection_date, '%Y-%m-%d') AS inspection_date,
         b.id AS booking_id
       FROM inspections i
-      JOIN bookings b ON b.id = i.booking_id
       JOIN vehicles v ON v.id = i.vehicle_id
+      LEFT JOIN bookings b ON b.id = i.booking_id
       LEFT JOIN users u ON u.id = i.inspected_by
       WHERE ${where}
       ORDER BY i.inspection_date DESC
@@ -169,19 +164,14 @@ export async function GET(req: NextRequest) {
       [...params, pageSize, (page - 1) * pageSize]
     );
 
-    return NextResponse.json(
-      { count, page, pageSize, totalPages, data: rows },
-      { status: 200 }
-    );
+    return NextResponse.json({ count, page, pageSize, totalPages, data: rows }, { status: 200 });
 
   } catch (e) {
     console.error("GET inspections error:", e);
-    return NextResponse.json(
-      { error: messages("serverError", "en") },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: messages("serverError", "en") }, { status: 500 });
   }
 }
+
 
 
 /* =========================================================
@@ -220,7 +210,7 @@ export async function POST(req: NextRequest) {
 
     const payload = await req.json();
     const rules: any = {
-      booking_id: [{ required: true, type: "number", label: "Booking ID" }],
+      booking_id: [{ required: false, type: "number", label: "Booking ID" }],
       vehicle_id: [{ required: true, type: "number", label: "Vehicle ID" }],
       inspection_type: [{ required: true, type: "string", label: "Inspection Type" }],
       odometer: [{ required: false, type: "number", label: "Odometer" }],
@@ -231,22 +221,23 @@ export async function POST(req: NextRequest) {
 
     const { valid, errors } = validateFields(payload, rules, lang);
     if (!valid) return NextResponse.json({ error: errors }, { status: 400 });
-    const [booking] = await pool.query(`SELECT tenant_id FROM bookings WHERE id = ?`, [payload.booking_id]);
+    if(payload.booking_id){const [booking] = await pool.query(`SELECT tenant_id FROM bookings WHERE id = ?`, [payload.booking_id]);
     if (!(booking as any[]).length) {
       return NextResponse.json({ error: messages("bookingNotFound", lang) }, { status: 404 });
     }
-
-    const tenant_id = (booking as any)[0].tenant_id;
+      const tenant_id = (booking as any)[0].tenant_id;
     if (!(await hasTenantAccess(user, tenant_id))) {
       return NextResponse.json({ error: messages("unauthorized", lang) }, { status: 401 });
     }
 
+  }
+  
     await pool.query(
       `INSERT INTO inspections
        (booking_id, vehicle_id, inspection_type, inspection_date, odometer, fuel_level, checklist_results, notes, inspected_by)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        payload.booking_id,
+        payload.booking_id||null,
         payload.vehicle_id,
         payload.inspection_type,
         payload.inspection_date || new Date(),
@@ -304,10 +295,14 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: messages("invalidInspectionIds", lang) }, { status: 400 });
     }
 
+    // جلب tenant_id من booking أو vehicle
     const [existing] = await pool.query(
-      `SELECT i.id, b.tenant_id
+      `SELECT 
+         i.id, 
+         COALESCE(b.tenant_id, v.tenant_id) AS tenant_id
        FROM inspections i
-       JOIN bookings b ON b.id = i.booking_id
+       LEFT JOIN bookings b ON b.id = i.booking_id
+       LEFT JOIN vehicles v ON v.id = i.vehicle_id
        WHERE i.id IN (?) AND i.status != 'deleted'`,
       [normalizedIds]
     );
@@ -317,6 +312,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: messages("noInspectionsFound", lang) }, { status: 404 });
     }
 
+    // تحقق من صلاحية المستخدم على كل tenant
     for (const inspection of existingArr) {
       if (!(await hasTenantAccess(user, inspection.tenant_id))) {
         return NextResponse.json({ error: messages("unauthorized", lang) }, { status: 401 });
@@ -325,7 +321,8 @@ export async function DELETE(req: NextRequest) {
 
     const deletableIds = existingArr.map((i) => i.id);
 
-    await pool.query(`UPDATE inspections SET status = 'deleted' WHERE id IN (?)`, [deletableIds]);
+    // Soft delete
+    await pool.query(`UPDATE inspections SET status='deleted' WHERE id IN (?)`, [deletableIds]);
 
     return NextResponse.json({ message: messages("deletedSuccess", lang) }, { status: 200 });
 
@@ -334,4 +331,5 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: messages("serverError", "en") }, { status: 500 });
   }
 }
+
 

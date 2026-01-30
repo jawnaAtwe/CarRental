@@ -1,10 +1,11 @@
 // hooks/useBranches.ts
 
 import { useState } from 'react';
+import { Branch } from '../types/vehicle.types';
 import { API_BASE_URL } from '../constants/vehicle.constants';
 
 export const useBranches = () => {
-  const [branches, setBranches] = useState<{id: number, name: string, name_ar: string}[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [branchesLoading, setBranchesLoading] = useState(false);
   const [branchesError, setBranchesError] = useState<string | null>(null);
 
@@ -28,7 +29,7 @@ export const useBranches = () => {
       const data = await response.json();
       setBranches(data.data || []);
     } catch (error: any) {
-      console.error(error);
+      console.error('Error fetching branches:', error);
       setBranches([]);
       setBranchesError(
         language === 'ar'
@@ -40,10 +41,16 @@ export const useBranches = () => {
     }
   };
 
+  const clearBranches = () => {
+    setBranches([]);
+    setBranchesError(null);
+  };
+
   return {
     branches,
     branchesLoading,
     branchesError,
     fetchBranches,
+    clearBranches,
   };
 };

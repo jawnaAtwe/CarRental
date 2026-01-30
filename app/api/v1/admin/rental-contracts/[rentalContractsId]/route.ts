@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnection } from "../../../functions/db";
 import { getUserData, hasPermission, hasTenantAccess } from "../../../functions/permissions";
+import puppeteer from "puppeteer";
 
 const errorMessages = {
   en: {
@@ -11,6 +12,8 @@ const errorMessages = {
     noFieldsToUpdate: "No fields provided to update.",
     updatedSuccess: "Rental contract updated successfully.",
     cancelledSuccess: "Rental contract cancelled successfully.",
+    pdfGenerationFailed:"Failed to generate contract PDF.",
+    pdfNotGenerated:"Contract PDF was not generated."
   },
   ar: {
     serverError: "خطأ في الخادم الداخلي.",
@@ -20,6 +23,8 @@ const errorMessages = {
     noFieldsToUpdate: "لم يتم تقديم أي حقول للتحديث.",
     updatedSuccess: "تم تعديل عقد الإيجار بنجاح.",
     cancelledSuccess: "تم إلغاء عقد الإيجار بنجاح.",
+    pdfGenerationFailed:"فشل في إنشاء ملف PDF للعقد.  ",
+    pdfNotGenerated:"لم يتم إنشاء ملف PDF للعقد."
   },
 };
 
@@ -53,12 +58,72 @@ function getErrorMessage(
  *      contract_number, status, pdf_path, created_at).
  */
 
+// export async function GET(
+//   req: NextRequest,
+//   { params }: { params: { rentalContractsId: string } }
+// ) {
+//   try {
+//     const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
+//     const pool = await dbConnection();
+//     const user: any = await getUserData(req);
+
+//     const contractId = Number(params.rentalContractsId);
+//     if (isNaN(contractId)) {
+//       return NextResponse.json(
+//         { error: getErrorMessage("missingContractId", lang) },
+//         { status: 400 }
+//       );
+//     }
+
+//     if (!(await hasPermission(user, "view_rental_contracts"))) {
+//       return NextResponse.json(
+//         { error: getErrorMessage("unauthorized", lang) },
+//         { status: 401 }
+//       );
+//     }
+
+//     const { searchParams } = new URL(req.url);
+//     const tenant_id = searchParams.get("tenant_id");
+
+//     if (tenant_id && !(await hasTenantAccess(user, tenant_id))) {
+//       return NextResponse.json(
+//         { error: getErrorMessage("unauthorized", lang) },
+//         { status: 401 }
+//       );
+//     }
+
+//     const [rows] = await pool.query(
+//       `SELECT * FROM rental_contracts 
+//        WHERE id = ? ${tenant_id ? "AND tenant_id = ?" : ""}
+//        LIMIT 1`,
+//       tenant_id ? [contractId, tenant_id] : [contractId]
+//     );
+
+//     const contract = (rows as any[])[0];
+//     if (!contract) {
+//       return NextResponse.json(
+//         { error: getErrorMessage("contractNotFound", lang) },
+//         { status: 404 }
+//       );
+//     }
+
+//     return NextResponse.json({ data: contract }, { status: 200 });
+//   } catch (error) {
+//     console.error("GET rental contract error:", error);
+//     return NextResponse.json(
+//       { error: getErrorMessage("serverError", "en") },
+//       { status: 500 }
+//     );
+//   }
+// }
 export async function GET(
   req: NextRequest,
   { params }: { params: { rentalContractsId: string } }
 ) {
   try {
-    const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
+    const lang: "ar" | "en" =
+      req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
+
     const pool = await dbConnection();
     const user: any = await getUserData(req);
 
@@ -87,12 +152,35 @@ export async function GET(
       );
     }
 
-    const [rows] = await pool.query(
-      `SELECT * FROM rental_contracts 
-       WHERE id = ? ${tenant_id ? "AND tenant_id = ?" : ""}
-       LIMIT 1`,
-      tenant_id ? [contractId, tenant_id] : [contractId]
-    );
+const [rows] = await pool.query(
+  `
+  SELECT 
+    rc.id,
+    c.full_name        AS customer_name,
+    b.start_date,
+    b.end_date,
+    ct.name            AS template_title,
+    ct.content         AS template_content
+
+  FROM rental_contracts rc
+  JOIN bookings b 
+    ON b.id = rc.booking_id
+  JOIN customers c 
+    ON c.id = b.customer_id
+  JOIN contract_templates ct
+    ON ct.tenant_id = rc.tenant_id
+   AND ct.status = 'active'
+
+  WHERE rc.id = ?
+  ${tenant_id ? "AND rc.tenant_id = ?" : ""}
+  ORDER BY (ct.language = ?) DESC
+  LIMIT 1
+  `,
+  tenant_id
+    ? [contractId, tenant_id, lang]
+    : [contractId, lang]
+);
+
 
     const contract = (rows as any[])[0];
     if (!contract) {
@@ -102,14 +190,99 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ data: contract }, { status: 200 });
+    // Generate HTML
+    const html = generateContractHTML(contract, lang);
+
+    // Generate PDF
+    const browser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "networkidle0" });
+
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+    });
+
+    await browser.close();
+
+  return new NextResponse(
+  new Uint8Array(pdfBuffer),
+  {
+    status: 200,
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="contract_${contractId}.pdf"`,
+    },
+  }
+);
+
   } catch (error) {
-    console.error("GET rental contract error:", error);
+    console.error("GET contract PDF error:", error);
     return NextResponse.json(
       { error: getErrorMessage("serverError", "en") },
       { status: 500 }
     );
   }
+}
+
+/* ---------------- HTML TEMPLATE ---------------- */
+
+function generateContractHTML(contract: any, lang: "ar" | "en") {
+  const isAr = lang === "ar";
+ let content = contract.template_content
+  return `
+<!DOCTYPE html>
+<html lang="${lang}" dir="${isAr ? "rtl" : "ltr"}">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      line-height: 1.6;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .row {
+      margin-bottom: 12px;
+    }
+    .label {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<h1>${contract.template_title }</h1>
+
+  ${content}
+<body>
+  <div class="row">
+    <span class="label">${isAr ? "رقم العقد" : "Contract ID"}:</span>
+    ${contract.id}
+  </div>
+
+ <div class="row">
+  <span class="label">${isAr ? "اسم العميل" : "Customer Name"}:</span>
+  ${contract.customer_name}
+</div>
+
+<div class="row">
+  <span class="label">${isAr ? "تاريخ البدء" : "Start Date"}:</span>
+  ${new Date(contract.start_date).toLocaleDateString()}
+</div>
+
+<div class="row">
+  <span class="label">${isAr ? "تاريخ الانتهاء" : "End Date"}:</span>
+  ${new Date(contract.end_date).toLocaleDateString()}
+</div>
+
+</body>
+</html>
+`;
 }
 /**
  * PUT /api/v1/admin/rental-contracts/[rentalContractsId]

@@ -81,11 +81,16 @@ export async function GET(
     }
 
     const [rows] = await pool.query(
-      `SELECT d.*, b.tenant_id
-       FROM inspection_damages d
-       JOIN inspections i ON i.id = d.inspection_id
-       JOIN bookings b ON b.id = i.booking_id
-       WHERE d.id = ? AND d.status = 'active'`,
+      `
+      SELECT 
+        d.*,
+        v.tenant_id
+      FROM inspection_damages d
+      JOIN inspections i ON i.id = d.inspection_id
+      LEFT JOIN vehicles v ON v.id = i.vehicle_id
+      WHERE d.id = ?
+        AND d.status = 'active'
+      `,
       [damageId]
     );
 
@@ -98,16 +103,20 @@ export async function GET(
 
     const damage = (rows as any)[0];
 
-    if (!(await hasTenantAccess(user, damage.tenant_id))) {
-      return NextResponse.json(
-        { error: messages("unauthorized", lang) },
-        { status: 401 }
-      );
+    if (damage.tenant_id) {
+      const allowed = await hasTenantAccess(user, damage.tenant_id);
+      if (!allowed) {
+        return NextResponse.json(
+          { error: messages("unauthorized", lang) },
+          { status: 401 }
+        );
+      }
     }
 
     delete damage.tenant_id;
 
     return NextResponse.json({ data: damage }, { status: 200 });
+
   } catch (e) {
     console.error("GET single inspection-damage error:", e);
     return NextResponse.json(
@@ -116,6 +125,7 @@ export async function GET(
     );
   }
 }
+
 /**
  * PUT /api/v1/admin/inspection-damages/{inspectionDamagesId}
  *
@@ -167,18 +177,12 @@ export async function PUT(
     const user: any = await getUserData(req);
 
     if (!(await hasPermission(user, "edit_inspection_damages"))) {
-      return NextResponse.json(
-        { error: messages("unauthorized", lang) },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: messages("unauthorized", lang) }, { status: 401 });
     }
 
     const damageId = Number(params.inspectionDamagesId);
     if (isNaN(damageId)) {
-      return NextResponse.json(
-        { error: messages("invalidId", lang) },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: messages("invalidId", lang) }, { status: 400 });
     }
 
     const payload = await req.json();
@@ -199,82 +203,69 @@ export async function PUT(
     };
 
     const { valid, errors } = validateFields(payload, rules, lang);
-    if (!valid) {
-      return NextResponse.json({ error: errors }, { status: 400 });
-    }
+    if (!valid) return NextResponse.json({ error: errors }, { status: 400 });
 
+    // جلب tenant_id من جدول vehicles المرتبط بالinspection
     const [existing] = await pool.query(
-      `SELECT d.id, b.tenant_id
+      `SELECT d.id, v.tenant_id
        FROM inspection_damages d
        JOIN inspections i ON i.id = d.inspection_id
-       JOIN bookings b ON b.id = i.booking_id
+       JOIN vehicles v ON v.id = i.vehicle_id
        WHERE d.id = ? AND d.status = 'active'`,
       [damageId]
     );
 
     if (!(existing as any[]).length) {
-      return NextResponse.json(
-        { error: messages("noDamagesFound", lang) },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: messages("noDamagesFound", lang) }, { status: 404 });
     }
 
     const tenant_id = (existing as any)[0].tenant_id;
     if (!(await hasTenantAccess(user, tenant_id))) {
-      return NextResponse.json(
-        { error: messages("unauthorized", lang) },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: messages("unauthorized", lang) }, { status: 401 });
     }
 
-    await pool.query(
-      `UPDATE inspection_damages SET
-        damage_type = COALESCE(?, damage_type),
-        damage_severity = COALESCE(?, damage_severity),
-        damage_location = ?,
-        description = ?,
-        is_new_damage = ?,
-        estimated_cost = ?,
-        final_cost = ?,
-        insurance_required = ?,
-        insurance_provider = ?,
-        claim_number = ?,
-        claim_status = ?,
-        claim_amount = ?
-       WHERE id = ?`,
-      [
-        payload.damage_type ?? null,
-        payload.damage_severity ?? null,
-        payload.damage_location ?? null,
-        payload.description ?? null,
-        payload.is_new_damage !== undefined ? (payload.is_new_damage ? 1 : 0) : null,
-        payload.estimated_cost ?? null,
-        payload.final_cost ?? null,
-        payload.insurance_required !== undefined
-          ? payload.insurance_required
-            ? 1
-            : 0
-          : null,
-        payload.insurance_provider ?? null,
-        payload.claim_number ?? null,
-        payload.claim_status ?? null,
-        payload.claim_amount ?? null,
-        damageId,
-      ]
-    );
+    // تحديث الضرر
+  await pool.query(
+  `UPDATE inspection_damages SET
+    damage_type = COALESCE(?, damage_type),
+    damage_severity = COALESCE(?, damage_severity),
+    damage_location = ?,
+    description = ?,
+    is_new_damage = ?,
+    estimated_cost = ?,
+    final_cost = ?,
+    insurance_required = ?,
+    insurance_provider = ?,
+    claim_number = ?,
+    claim_status = ?,
+    claim_amount = ?
+   WHERE id = ?`,
+  [
+    payload.damage_type ?? null,
+    payload.damage_severity ?? null,
+    payload.damage_location ?? null,
+    payload.description ?? null,
+    payload.is_new_damage !== undefined ? (payload.is_new_damage ? 1 : 0) : null,
+    payload.estimated_cost ?? null,
+    payload.final_cost ?? null,
+    payload.insurance_required !== undefined ? (payload.insurance_required ? 1 : 0) : null,
+    payload.insurance_provider ?? null,
+    payload.claim_number ?? null,
+    payload.claim_status ?? null,
+    payload.claim_amount !== undefined && payload.claim_amount !== '' ? payload.claim_amount : null,
+    damageId,
+  ]
+);
 
-    return NextResponse.json(
-      { message: messages("updatedSuccess", lang) },
-      { status: 200 }
-    );
+
+    return NextResponse.json({ message: messages("updatedSuccess", lang) }, { status: 200 });
+
   } catch (e) {
     console.error("PUT inspection-damage error:", e);
-    return NextResponse.json(
-      { error: messages("serverError", "en") },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: messages("serverError", "en") }, { status: 500 });
   }
 }
+
 
 /**
  * DELETE /api/v1/admin/inspection-damages/{inspectionDamagesId}
@@ -326,15 +317,18 @@ export async function DELETE(
         { status: 400 }
       );
     }
+const [rows] = await pool.query(
+  `SELECT 
+      d.id,
+      COALESCE(b.tenant_id, v.tenant_id) AS tenant_id
+   FROM inspection_damages d
+   JOIN inspections i ON i.id = d.inspection_id
+   LEFT JOIN bookings b ON b.id = i.booking_id
+   LEFT JOIN vehicles v ON v.id = i.vehicle_id
+   WHERE d.id = ? AND d.status = 'active'`,
+  [damageId]
+);
 
-    const [rows] = await pool.query(
-      `SELECT d.id, b.tenant_id
-       FROM inspection_damages d
-       JOIN inspections i ON i.id = d.inspection_id
-       JOIN bookings b ON b.id = i.booking_id
-       WHERE d.id = ? AND d.status = 'active'`,
-      [damageId]
-    );
 
     if (!(rows as any[]).length) {
       return NextResponse.json(

@@ -122,7 +122,9 @@ export async function GET(req: NextRequest) {
         max_users,
         status,
         created_at,
-        updated_at
+        updated_at,
+        currency,
+        currency_code
       FROM tenants
       WHERE ${where} AND status != 'deleted'
       ORDER BY ${sortBy} ${sortOrder}

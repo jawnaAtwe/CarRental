@@ -65,13 +65,16 @@ export async function GET(req: NextRequest) {
     const pageSize = Number(searchParams.get("pageSize") || 20);
     const tenant_id = searchParams.get("tenant_id");
 
-    const allowed = await hasTenantAccess(user, tenant_id);
-    if (!allowed) {
-      return NextResponse.json({ error: messages("unauthorized", lang) }, { status: 401 });
+    // الشرط للتحقق من صلاحية التينانت
+    if (tenant_id) {
+      const allowed = await hasTenantAccess(user, tenant_id);
+      if (!allowed) {
+        return NextResponse.json({ error: messages("unauthorized", lang) }, { status: 401 });
+      }
     }
 
     // شروط البحث
-    let where = "1=1 AND d.status!='deleted'";
+    let where = "d.status != 'deleted'";
     const params: any[] = [];
 
     if (inspection_id) {
@@ -80,42 +83,55 @@ export async function GET(req: NextRequest) {
     }
 
     if (tenant_id) {
-      // tenant_id مرتبط بالبوكينج
-      where += " AND b.tenant_id = ?";
+      // tenant ممكن يجي من الـ vehicle
+      where += " AND (v.tenant_id = ? OR i.vehicle_id IS NULL)";
       params.push(tenant_id);
     }
 
-    // احسب العدد الكلي
+    // العدد الكلي
     const [countRows] = await pool.query(
-      `SELECT COUNT(*) AS count
-       FROM inspection_damages d
-       JOIN inspections i ON i.id = d.inspection_id
-       JOIN bookings b ON b.id = i.booking_id
-       WHERE ${where}`,
+      `
+      SELECT COUNT(*) AS count
+      FROM inspection_damages d
+      JOIN inspections i ON i.id = d.inspection_id
+      LEFT JOIN vehicles v ON v.id = i.vehicle_id
+      WHERE ${where}
+      `,
       params
     );
+
     const count = (countRows as any[])[0]?.count || 0;
     const totalPages = Math.ceil(count / pageSize);
 
     // جلب البيانات
     const [rows] = await pool.query(
-      `SELECT d.*, i.booking_id, i.vehicle_id
-       FROM inspection_damages d
-       JOIN inspections i ON i.id = d.inspection_id
-       JOIN bookings b ON b.id = i.booking_id
-       WHERE ${where}
-       ORDER BY d.id DESC
-       LIMIT ? OFFSET ?`,
+      `
+      SELECT 
+        d.*,
+        i.booking_id,
+        i.vehicle_id,
+        v.tenant_id
+      FROM inspection_damages d
+      JOIN inspections i ON i.id = d.inspection_id
+      LEFT JOIN vehicles v ON v.id = i.vehicle_id
+      WHERE ${where}
+      ORDER BY d.id DESC
+      LIMIT ? OFFSET ?
+      `,
       [...params, pageSize, (page - 1) * pageSize]
     );
 
-    return NextResponse.json({ count, page, pageSize, totalPages, data: rows }, { status: 200 });
+    return NextResponse.json(
+      { count, page, pageSize, totalPages, data: rows },
+      { status: 200 }
+    );
 
   } catch (e) {
     console.error("GET inspection-damages error:", e);
     return NextResponse.json({ error: messages("serverError", "en") }, { status: 500 });
   }
 }
+
 
 
 /**
@@ -153,51 +169,59 @@ export async function POST(req: NextRequest) {
     const pool = await dbConnection();
     const user: any = await getUserData(req);
 
+    // تحقق من صلاحية إضافة أضرار الفحص
     if (!(await hasPermission(user, "add_inspection_damages"))) {
       return NextResponse.json({ error: messages("unauthorized", lang) }, { status: 401 });
     }
 
     const payload = await req.json();
-    const rules: any = {
-  inspection_id: [{ required: true, type: "number", label: { en: "Inspection ID", ar: "رقم التفتيش" } }],
-  damage_type: [{ required: true, type: "string", label: { en: "Damage Type", ar: "نوع الضرر" } }],
-  damage_severity: [{ required: true, type: "string", label: { en: "Damage Severity", ar: "شدة الضرر" } }],
-  damage_location: [{ required: false, type: "string", label: { en: "Damage Location", ar: "موقع الضرر" } }],
-  description: [{ required: false, type: "string", label: { en: "Description", ar: "الوصف" } }],
-  estimated_cost: [{ required: false, type: "number", label: { en: "Estimated Cost", ar: "التكلفة المقدرة" } }],
-  final_cost: [{ required: false, type: "number", label: { en: "Final Cost", ar: "التكلفة النهائية" } }],
-  insurance_required: [{ required: false, type: "boolean", label: { en: "Insurance Required", ar: "هل التأمين مطلوب" } }],
-  insurance_provider: [{ required: false, type: "string", label: { en: "Insurance Provider", ar: "مزود التأمين" } }],
-  claim_number: [{ required: false, type: "string", label: { en: "Claim Number", ar: "رقم المطالبة" } }],
-  claim_status: [{ required: false, type: "string", label: { en: "Claim Status", ar: "حالة المطالبة" } }],
-};
 
+    // قواعد التحقق من الحقول
+    const rules: any = {
+      inspection_id: [{ required: true, type: "number", label: { en: "Inspection ID", ar: "رقم التفتيش" } }],
+      damage_type: [{ required: true, type: "string", label: { en: "Damage Type", ar: "نوع الضرر" } }],
+      damage_severity: [{ required: true, type: "string", label: { en: "Damage Severity", ar: "شدة الضرر" } }],
+      damage_location: [{ required: false, type: "string", label: { en: "Damage Location", ar: "موقع الضرر" } }],
+      description: [{ required: false, type: "string", label: { en: "Description", ar: "الوصف" } }],
+      estimated_cost: [{ required: false, type: "number", label: { en: "Estimated Cost", ar: "التكلفة المقدرة" } }],
+      final_cost: [{ required: false, type: "number", label: { en: "Final Cost", ar: "التكلفة النهائية" } }],
+      insurance_required: [{ required: false, type: "boolean", label: { en: "Insurance Required", ar: "هل التأمين مطلوب" } }],
+      insurance_provider: [{ required: false, type: "string", label: { en: "Insurance Provider", ar: "مزود التأمين" } }],
+      claim_number: [{ required: false, type: "string", label: { en: "Claim Number", ar: "رقم المطالبة" } }],
+      claim_amount: [{ required: false, type: "number", label: { en: "Claim Amount", ar: "مبلغ المطالبة" } }],
+      claim_status: [{ required: false, type: "string", label: { en: "Claim Status", ar: "حالة المطالبة" } }],
+    };
 
     const { valid, errors } = validateFields(payload, rules, lang);
     if (!valid) return NextResponse.json({ error: errors }, { status: 400 });
 
+    // جلب tenant_id من جدول vehicles المرتبط بالinspection
     const [inspectionRows] = await pool.query(
-      `SELECT b.tenant_id
+      `SELECT v.tenant_id
        FROM inspections i
-       JOIN bookings b ON b.id = i.booking_id
+       JOIN vehicles v ON v.id = i.vehicle_id
        WHERE i.id = ?`,
       [payload.inspection_id]
     );
 
     if (!(inspectionRows as any[]).length) {
-      return NextResponse.json({ error: "Inspection not found." }, { status: 404 });
+      return NextResponse.json({ error: messages("noDamagesFound", lang) }, { status: 404 });
     }
 
     const tenant_id = (inspectionRows as any)[0].tenant_id;
+
+    // تحقق من صلاحية الـ tenant
     if (!(await hasTenantAccess(user, tenant_id))) {
       return NextResponse.json({ error: messages("unauthorized", lang) }, { status: 401 });
     }
 
+    // إدراج بيانات الضرر في قاعدة البيانات
     await pool.query(
       `INSERT INTO inspection_damages
        (inspection_id, damage_type, damage_severity, damage_location, description,
-        estimated_cost, final_cost, insurance_required, insurance_provider, claim_number,claim_amount, claim_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?)`,
+        estimated_cost, final_cost, insurance_required, insurance_provider,
+        claim_number, claim_amount, claim_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         payload.inspection_id,
         payload.damage_type,
@@ -209,8 +233,8 @@ export async function POST(req: NextRequest) {
         payload.insurance_required ? 1 : 0,
         payload.insurance_provider || null,
         payload.claim_number || null,
-         payload.claim_amount || null,
-        payload.claim_status || 'not_submitted',
+        payload.claim_amount || null,
+        payload.claim_status || "not_submitted",
       ]
     );
 
@@ -219,8 +243,7 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     console.error("POST inspection-damages error:", e);
     return NextResponse.json({ error: messages("serverError", "en") }, { status: 500 });
-  }
-}
+  }}
 
 /**
  * DELETE /api/v1/admin/inspection-damages
@@ -264,11 +287,15 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: messages("invalidDamageIds", lang) }, { status: 400 });
     }
 
+    // جلب tenant_id من booking أو vehicle
     const [existing] = await pool.query(
-      `SELECT d.id, b.tenant_id
+      `SELECT 
+         d.id, 
+         COALESCE(b.tenant_id, v.tenant_id) AS tenant_id
        FROM inspection_damages d
        JOIN inspections i ON i.id = d.inspection_id
-       JOIN bookings b ON b.id = i.booking_id
+       LEFT JOIN bookings b ON b.id = i.booking_id
+       LEFT JOIN vehicles v ON v.id = i.vehicle_id
        WHERE d.id IN (?)`,
       [normalizedIds]
     );
@@ -278,6 +305,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: messages("noDamagesFound", lang) }, { status: 404 });
     }
 
+    // تحقق من صلاحية المستخدم على كل tenant
     for (const damage of existingArr) {
       if (!(await hasTenantAccess(user, damage.tenant_id))) {
         return NextResponse.json({ error: messages("unauthorized", lang) }, { status: 401 });
@@ -286,7 +314,8 @@ export async function DELETE(req: NextRequest) {
 
     const deletableIds = existingArr.map((d) => d.id);
 
-    await pool.query(`DELETE FROM inspection_damages WHERE id IN (?)`, [deletableIds]);
+    // Soft delete
+    await pool.query(`UPDATE inspection_damages SET status='deleted' WHERE id IN (?)`, [deletableIds]);
 
     return NextResponse.json({ message: messages("deletedSuccess", lang) }, { status: 200 });
 
@@ -295,3 +324,4 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: messages("serverError", "en") }, { status: 500 });
   }
 }
+

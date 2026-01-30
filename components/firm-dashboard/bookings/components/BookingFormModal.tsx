@@ -15,6 +15,7 @@ import {
 } from '@heroui/react';
 import { BookingForm, Branch, Customer, Vehicle } from '../types/bookingTypes';
 import { BOOKING_STATUS_OPTIONS } from '../constants/bookingConstants';
+import { useRouter } from 'next/navigation';
 
 interface BookingFormModalProps {
   language: string;
@@ -47,6 +48,7 @@ export const BookingFormModal = ({
   onSave,
   onClose,
 }: BookingFormModalProps) => {
+  const router = useRouter();
   return (
     <Modal
       isDismissable={false}
@@ -224,6 +226,12 @@ export const BookingFormModal = ({
               </Button>
               <Button color="primary" type="submit" isLoading={loadingForm}>
                 {language === 'ar' ? 'حفظ' : 'Save'}
+              </Button>
+                <Button
+                color="secondary"
+                onPress={() => router.push('/asdsa/dashboard/inspections')}
+              >
+                {language === 'ar' ? 'اذهب للفحوصات' : 'Go to Inspections'}
               </Button>
             </ModalFooter>
           </Form>
