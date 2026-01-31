@@ -81,7 +81,16 @@ export const VehicleDetailsModal = ({
                       : '-'}
                   </p>
                 </div>
-
+   <div>
+                  <p className="text-xs uppercase tracking-wide text-foreground/60">
+                    {language === 'ar' ? 'السعر / ساعة' : 'Price / hour'}
+                  </p>
+                  <p className="text-sm font-medium">
+                    {vehicle.price_per_hour
+                      ? `${vehicle.price_per_hour} ${vehicle.currency_code || 'ILS'}`
+                      : '-'}
+                  </p>
+                </div>
                 <div>
                   <p className="text-xs uppercase tracking-wide text-foreground/60">
                     {language === 'ar' ? 'السعر / أسبوع' : 'Price / Week'}
@@ -134,7 +143,16 @@ export const VehicleDetailsModal = ({
                       : '-'}
                   </p>
                 </div>
-
+ <div>
+                  <p className="text-xs uppercase tracking-wide text-foreground/60">
+                    {language === 'ar' ? 'الغرامة / ساعة' : 'Late Fee / Hour'}
+                  </p>
+                  <p className="text-sm font-medium">
+                    {vehicle.late_fee_hour
+                      ? `${vehicle.late_fee_hour} ${vehicle.currency_code || 'ILS'}`
+                      : '-'}
+                  </p>
+                </div>
                 <div>
                   <p className="text-xs uppercase tracking-wide text-foreground/60">
                     {language === 'ar' ? 'ناقل الحركة' : 'Transmission'}

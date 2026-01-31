@@ -35,6 +35,7 @@ interface Booking {
   end_date: string;
   total_amount: number;
   late_fee_day: number;
+   late_fee_hour: number;
   status: string;
   tenant_name: string;
   currency_code: string;
@@ -79,19 +80,45 @@ export default function CustomerBookingsPage() {
   }, [user]);
 
   /* ================= HELPERS ================= */
-  const calculateLateFee = (booking: Booking | null) => {
-  if (!booking) return 0;
+//   const calculateLateFee = (booking: Booking | null) => {
+//   if (!booking) return 0;
 
+//   const lateFeePerDay = booking.late_fee_day ?? 0;
+
+//   const endDate = new Date(booking.end_date);
+//   const today = new Date();
+
+//   const diffDays = Math.floor((today.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
+
+//   const daysLate = Math.max(0, diffDays ); 
+
+//   return lateFeePerDay * daysLate;
+// };
+const calculateLateFee = (booking: Booking | null): number => {
+  if (!booking || !booking.end_date) return 0;
+
+  const lateFeePerHour = booking.late_fee_hour ?? 0;
   const lateFeePerDay = booking.late_fee_day ?? 0;
 
   const endDate = new Date(booking.end_date);
-  const today = new Date();
+  const now = new Date();
 
-  const diffDays = Math.floor((today.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
+  // لو ما زال ما وصل وقت النهاية
+  if (isNaN(endDate.getTime()) || now <= endDate) return 0;
 
-  const daysLate = Math.max(0, diffDays ); 
+  const diffMs = now.getTime() - endDate.getTime();
+  const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
 
-  return lateFeePerDay * daysLate;
+  // 🔹 أولوية للساعة لو موجودة
+  if (lateFeePerHour > 0) {
+    console.log("Late hours:", diffHours, "Fee/hour:", lateFeePerHour);
+    return diffHours * lateFeePerHour;
+  }
+
+  // 🔹 fallback: بالأيام
+  const diffDays = Math.ceil(diffHours / 24);
+  console.log("Late days:", diffDays, "Fee/day:", lateFeePerDay);
+  return diffDays * lateFeePerDay;
 };
 
 

@@ -10,8 +10,10 @@ export type VehicleDB = {
   model?: string | null;
   year?: number | null;
   late_fee_day?: number | null;
+   late_fee_hour?: number | null;
   trim?: string | null;
   category?: string | null;
+  price_per_hour: number;
   price_per_day: number;
   price_per_week?: number | null;
   price_per_month?: number | null;
@@ -35,8 +37,10 @@ export type VehicleForm = {
   model: string;
   year?: number;
   late_fee_day?: number;
+  late_fee_hour?: number;
   trim?: string;
   category?: string;
+  price_per_hour: number;
   price_per_day: number;
   price_per_week?: number;
   price_per_month?: number;

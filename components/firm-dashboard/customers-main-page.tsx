@@ -10,6 +10,7 @@ interface Car {
   make: string;
   model: string;
   year: number;
+  price_per_hour?: number; 
   price_per_day: number;
   price_per_week: number;
   price_per_year:number;
@@ -107,48 +108,72 @@ useEffect(() => {
     return diffTime > 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : 0;
   };
 
- 
-const calculateCarPrice = (car: Car, days: number): number => {
+ const getBookingDuration = () => {
+  if (!pickupDate || !dropoffDate) return { hours: 0, days: 0 };
+
+  const start = new Date(pickupDate);
+  const end = new Date(dropoffDate);
+  const diffMs = end.getTime() - start.getTime();
+
+  if (diffMs <= 0) return { hours: 0, days: 0 };
+
+  const totalHours = diffMs / (1000 * 60 * 60);
+  const days = Math.floor(totalHours / 24);
+  const hours = Math.ceil(totalHours % 24);
+
+  return { hours, days };
+};
+
+const calculateCarPrice = (car: Car): number => {
+  const { hours, days } = getBookingDuration();
+
   let total = 0;
   let remainingDays = days;
 
-  // أسعار السيارة
+  const hourPrice = car.price_per_hour ?? 0;
   const dayPrice = car.price_per_day ?? 0;
   const weekPrice = car.price_per_week ?? 0;
   const monthPrice = car.price_per_month ?? 0;
   const yearPrice = car.price_per_year ?? 0;
 
-  // سنوات
+  // 🔹 ساعات (إذا أقل من يوم)
+  if (days === 0 && hourPrice > 0) {
+    return hours * hourPrice;
+  }
+
+  // 🔹 سنوات
   if (remainingDays >= 365 && yearPrice > 0) {
     const years = Math.floor(remainingDays / 365);
     total += years * yearPrice;
     remainingDays %= 365;
   }
 
-  // شهور
+  // 🔹 شهور
   if (remainingDays >= 30 && monthPrice > 0) {
     const months = Math.floor(remainingDays / 30);
     total += months * monthPrice;
     remainingDays %= 30;
   }
 
-  // أسابيع
+  // 🔹 أسابيع
   if (remainingDays >= 7 && weekPrice > 0) {
     const weeks = Math.floor(remainingDays / 7);
     total += weeks * weekPrice;
     remainingDays %= 7;
   }
 
-  // أيام متبقية
+  // 🔹 أيام
   total += remainingDays * dayPrice;
+
+  // 🔹 ساعات متبقية
+  if (hours > 0 && hourPrice > 0) {
+    total += hours * hourPrice;
+  }
 
   return total;
 };
 
-const totalPrice = selectedCars.reduce(
-  (sum, car) => sum + calculateCarPrice(car, getNumberOfDays()),
-  0
-);
+
 
   const handleCarSelect = (car: Car) => {
     if (selectedCars.find(c => c.id === car.id)) {
@@ -177,10 +202,10 @@ const totalPrice = selectedCars.reduce(
           branch_id: selectedBranchId,
           vehicle_id: car.id,
           customer_id: user?.id,
+          total_amount: calculateCarPrice(car),
           start_date: pickupDate,
           end_date: dropoffDate,
           status: "pending",
-          total_amount: calculateCarPrice(car, getNumberOfDays()),
           notes: "",
         };
 
@@ -346,9 +371,16 @@ const totalPrice = selectedCars.reduce(
   <p className="font-bold text-amber-400">
     {language === "ar" ? "السعر اليومي" : "Daily Price"}:
     {" "}
-    {calculateCarPrice(car, 1)} {car.currency_code}
+    {car.price_per_day} {car.currency_code}
     {language === "ar" ? " / يوم" : " / day"}
   </p>
+  <p className="font-bold text-amber-400">
+  {language === "ar" ? "السعر بالساعة" : "Hourly Price"}:
+  {" "}
+  {car.price_per_hour} {car.currency_code}
+  {language === "ar" ? " / ساعة" : " / hour"}
+</p>
+
   <p className="text-gray-200">
     {language==="ar" ? "السعر الأسبوعي" : "Weekly Price"}:
     {" "}
@@ -382,26 +414,39 @@ const totalPrice = selectedCars.reduce(
           <div className="mt-8 max-w-3xl mx-auto p-6 rounded-2xl shadow-lg bg-gradient-to-r from-amber-400 to-amber-600 text-black">
             <h3 className="text-2xl font-bold mb-4 text-center">Booking Summary</h3>
 
-            {/* Dates */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div className="flex flex-col">
-                <label className="mb-1 font-semibold">Pickup Date</label>
-                <input type="date" value={pickupDate} onChange={e => setPickupDate(e.target.value)} className="border rounded px-3 py-2 bg-gray-700 text-white"/>
-              </div>
-              <div className="flex flex-col">
-                <label className="mb-1 font-semibold">Dropoff Date</label>
-                <input type="date" value={dropoffDate} onChange={e => setDropoffDate(e.target.value)} className="border rounded px-3 py-2 bg-gray-700 text-white"/>
-              </div>
-            </div>
+         {/* Dates (Hourly Booking) */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+  <div className="flex flex-col">
+    <label className="mb-1 font-semibold">Pickup Date & Time</label>
+    <input
+      type="datetime-local"
+      value={pickupDate}
+      onChange={(e) => setPickupDate(e.target.value)}
+      className="border rounded px-3 py-2 bg-gray-700 text-white"
+    />
+  </div>
+
+  <div className="flex flex-col">
+    <label className="mb-1 font-semibold">Dropoff Date & Time</label>
+    <input
+      type="datetime-local"
+      value={dropoffDate}
+      onChange={(e) => setDropoffDate(e.target.value)}
+      className="border rounded px-3 py-2 bg-gray-700 text-white"
+    />
+  </div>
+</div>
+
 
             {/* Selected Cars */}
             {selectedCars.length > 0 ? (
               <div className="mb-4">
-               {selectedCars.map(car => (
+              {selectedCars.map(car => (
   <p key={car.id} className="text-white font-semibold">
-    {car.make} {car.model} - {calculateCarPrice(car, getNumberOfDays())} {car.currency_code}
+    {car.make} {car.model} - {calculateCarPrice(car)} {car.currency_code}
   </p>
 ))}
+
 
               </div>
             ) : (

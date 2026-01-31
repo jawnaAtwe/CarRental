@@ -102,7 +102,7 @@ if (!end_date) {
 
     const { valid, errors } = validateFields(payload, rules, lang);
     if (!valid) return NextResponse.json({ error: errors }, { status: 400 });
-    //check max booking
+   //check max booking
 const [rows]: any = await pool.query(
   `
   SELECT 
@@ -145,8 +145,19 @@ if (rows.length) {
       { status: 403 }
     );
   }
+} else {
+  // إذا ما في خطة نشطة
+  return NextResponse.json(
+    {
+      error:
+        lang === "ar"
+          ? "لا توجد خطة نشطة لهذا المستأجر"
+          : "No active plan found for this tenant",
+    },
+    { status: 403 }
+  );
 }
-///
+
     await pool.query(
       `INSERT INTO bookings (
         tenant_id, branch_id, vehicle_id, customer_id,
@@ -278,39 +289,41 @@ export async function GET(req: NextRequest) {
     const totalPages = Math.ceil(count / pageSize);
 
     // 📄 Data
-    const [bookings] = await pool.query(
-      `SELECT 
-        b.id,
-        b.tenant_id,
-        t.name AS tenant_name,
-        b.branch_id,
-        br.name AS branch_name,
-        br.name_ar AS branch_name_ar,
-        b.vehicle_id,
-        v.make AS vehicle_make,
-        v.model AS vehicle_model,
-        v.late_fee_day,
-        DATE_FORMAT(b.start_date, '%Y-%m-%d') AS start_date,
-        DATE_FORMAT(b.end_date, '%Y-%m-%d') AS end_date,
-        CONCAT(v.make, ' ', v.model) AS vehicle_name,
-        b.customer_id,
-        c.full_name AS customer_name,
-        b.status,
-        v.currency_code,
-        b.total_amount,
-        b.notes,
-        b.created_at,
-        b.updated_at
-      FROM bookings b
-      LEFT JOIN tenants t ON b.tenant_id = t.id
-      LEFT JOIN branches br ON b.branch_id = br.id
-      LEFT JOIN customers c ON b.customer_id = c.id
-      LEFT JOIN vehicles v ON b.vehicle_id = v.id
-      WHERE ${where}
-      ORDER BY ${sortBy} ${sortOrder}
-      LIMIT ? OFFSET ?`,
-      [...params, pageSize, (page - 1) * pageSize]
-    );
+  const [bookings] = await pool.query(
+  `SELECT 
+    b.id,
+    b.tenant_id,
+    t.name AS tenant_name,
+    b.branch_id,
+    br.name AS branch_name,
+    br.name_ar AS branch_name_ar,
+    b.vehicle_id,
+    v.make AS vehicle_make,
+    v.model AS vehicle_model,
+    v.late_fee_day,
+    v.late_fee_hour,
+    DATE_FORMAT(b.start_date, '%Y-%m-%d %H:%i') AS start_date,
+    DATE_FORMAT(b.end_date, '%Y-%m-%d %H:%i') AS end_date,
+    CONCAT(v.make, ' ', v.model) AS vehicle_name,
+    b.customer_id,
+    c.full_name AS customer_name,
+    b.status,
+    v.currency_code,
+    b.total_amount,
+    b.notes,
+    b.created_at,
+    b.updated_at
+  FROM bookings b
+  LEFT JOIN tenants t ON b.tenant_id = t.id
+  LEFT JOIN branches br ON b.branch_id = br.id
+  LEFT JOIN customers c ON b.customer_id = c.id
+  LEFT JOIN vehicles v ON b.vehicle_id = v.id
+  WHERE ${where}
+  ORDER BY ${sortBy} ${sortOrder}
+  LIMIT ? OFFSET ?`,
+  [...params, pageSize, (page - 1) * pageSize]
+);
+
 
     return NextResponse.json(
       { count, page, pageSize, totalPages, data: bookings },

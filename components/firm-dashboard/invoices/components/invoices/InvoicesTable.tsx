@@ -191,7 +191,7 @@ export const InvoicesTable = ({
                   >
                     {language === 'ar' ? 'عرض' : 'View'}
                   </Button>
-                  {invoice.status === 'draft' && (
+                 
                     <>
                       <Button
                         variant="flat"
@@ -212,7 +212,6 @@ export const InvoicesTable = ({
                         {language === 'ar' ? 'حذف' : 'Delete'}
                       </Button>
                     </>
-                  )}
                 </div>
               </TableCell>
             </TableRow>

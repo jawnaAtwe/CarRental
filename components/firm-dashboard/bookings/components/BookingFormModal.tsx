@@ -166,26 +166,28 @@ export const BookingFormModal = ({
                     </SelectItem>
                   ))}
                 </Select>
+<Input
+  className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"
+  label={language === 'ar' ? 'تاريخ ووقت البداية' : 'Start Date & Time'}
+  type="datetime-local"
+  value={formData.start_date}
+  onChange={(e) =>
+    setFormData((p) => ({ ...p, start_date: e.target.value }))
+  }
+  isRequired
+/>
 
-                <Input
-                  className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"
-                  label={language === 'ar' ? 'تاريخ البداية' : 'Start Date'}
-                  type="date"
-                  value={formData.start_date}
-                  onChange={(e) =>
-                    setFormData((p) => ({ ...p, start_date: e.target.value }))
-                  }
-                  isRequired
-                />
+<Input
+  className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"
+  label={language === 'ar' ? 'تاريخ ووقت النهاية' : 'End Date & Time'}
+  type="datetime-local"
+  value={formData.end_date}
+  onChange={(e) =>
+    setFormData((p) => ({ ...p, end_date: e.target.value }))
+  }
+  isRequired
+/>
 
-                <Input
-                  className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"
-                  label={language === 'ar' ? 'تاريخ النهاية' : 'End Date'}
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData((p) => ({ ...p, end_date: e.target.value }))}
-                  isRequired
-                />
 
                 <Input
                   className="bg-gray-50 dark:bg-gray-700 text-black dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-400"

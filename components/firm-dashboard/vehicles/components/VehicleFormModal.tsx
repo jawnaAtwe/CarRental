@@ -135,6 +135,16 @@ export const VehicleFormModal = ({
                       }
                       isRequired
                     />
+   {/* PRICING */}
+                    <Input
+                      label={language === 'ar' ? 'سعر الإيجار بالساعة' : 'Price Per hour'}
+                      type="number"
+                      value={formData.price_per_hour.toString()}
+                      onChange={(e) =>
+                        setFormData((p) => ({ ...p, price_per_hour: Number(e.target.value) }))
+                      }
+                      isRequired
+                    />
 
                     {/* PRICING */}
                     <Input
@@ -198,7 +208,18 @@ export const VehicleFormModal = ({
                         }))
                       }
                     />
-
+       <Input
+                      label={language === 'ar' ? 'غرامة كل ساعة' : 'Late Fee Per hour'}
+                      type="number"
+                      value={formData.late_fee_hour?.toString() || ''}
+                      onChange={(e) =>
+                        setFormData((p) => ({
+                          ...p,
+                          late_fee_hour:
+                            e.target.value === '' ? undefined : Number(e.target.value),
+                        }))
+                      }
+                    />
                     {/* ⭐ CURRENCY (READ-ONLY DISPLAY) */}
                     <Input
                       label={language === 'ar' ? 'العملة' : 'Currency'}

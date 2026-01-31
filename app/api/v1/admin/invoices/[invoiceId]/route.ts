@@ -151,7 +151,7 @@ export async function PUT(req: NextRequest, { params }: any) {
     const tenantAccess = await hasTenantAccess(user, tenant_id);
     if (!tenantAccess) return NextResponse.json({ error: getInvoiceErrorMessage("unauthorized", lang) }, { status: 401 });
 
-    const [existingRows] = await pool.query("SELECT * FROM invoices WHERE id = ? AND tenant_id = ? AND status = 'draft'", [invoiceId, tenant_id]);
+    const [existingRows] = await pool.query("SELECT * FROM invoices WHERE id = ? AND tenant_id = ? AND status != 'cancelled'", [invoiceId, tenant_id]);
     const invoice = (existingRows as any[])[0];
     if (!invoice) return NextResponse.json({ error: getInvoiceErrorMessage("invoiceNotFound", lang) }, { status: 404 });
 
@@ -237,7 +237,7 @@ export async function DELETE(req: NextRequest, { params }: any) {
     const tenantAccess = await hasTenantAccess(user, tenant_id);
     if (!tenantAccess) return NextResponse.json({ error: getInvoiceErrorMessage("unauthorized", lang) }, { status: 401 });
 
-    const [existingRows] = await pool.query("SELECT id FROM invoices WHERE id = ? AND tenant_id = ? AND status = 'draft'", [invoiceId, tenant_id]);
+    const [existingRows] = await pool.query("SELECT id FROM invoices WHERE id = ? AND tenant_id = ? AND status != 'cancelled'", [invoiceId, tenant_id]);
     if (!(existingRows as any[]).length) return NextResponse.json({ error: getInvoiceErrorMessage("invoiceNotFound", lang) }, { status: 404 });
 
     await pool.query("UPDATE invoices SET status = 'cancelled', updated_at = NOW() WHERE id = ? AND tenant_id = ?", [invoiceId, tenant_id]);

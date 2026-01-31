@@ -11,6 +11,7 @@ export type BookingDB = {
   vehicle_id: number;
   vehicle_name?: string | null;
   late_fee_day?: number | null;
+  late_fee_hour?: number | null;
   start_date: string;          
   end_date: string;  
   total_amount: number;
@@ -27,6 +28,7 @@ export type BookingForm = {
   branch_id?: number;
   customer_id?: number; 
   late_fee_day?: number;
+  late_fee_hour?: number;
   vehicle_id?: number; 
   currency_code?: string; 
   start_date: string;

@@ -112,7 +112,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       make,
       model,
       year,
-      late_fee_day,
+      late_fee_day,late_fee_hour,
       trim,
       category,
       license_plate,
@@ -126,6 +126,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       price_per_week,
       price_per_month,
       price_per_year,
+      price_per_hour,
       currency_code,
       currency,
       status,
@@ -193,8 +194,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         );
       }
     }
-//check if exceed max car number
-
+// Check if exceed max car number
 const [rows]: any = await pool.query(
   `
   SELECT 
@@ -210,8 +210,8 @@ const [rows]: any = await pool.query(
   [tenant_id]
 );
 
-if (rows.length) {
-  const { max_cars } = rows[0];
+if (rows && rows.length > 0) {
+  const { max_cars = 0 } = rows[0];
 
   const [carsCount]: any = await pool.query(
     `
@@ -223,7 +223,7 @@ if (rows.length) {
     [tenant_id]
   );
 
-  const currentCars = carsCount[0].total;
+  const currentCars = carsCount && carsCount[0]?.total ? carsCount[0].total : 0;
 
   if (currentCars >= max_cars) {
     return NextResponse.json(
@@ -236,7 +236,19 @@ if (rows.length) {
       { status: 403 }
     );
   }
+} else {
+  // لو ما فيه خطة مفعلة
+  return NextResponse.json(
+    {
+      error:
+        lang === "ar"
+          ? "لا توجد خطة مفعلة لهذا المستأجر"
+          : "No active plan found for this tenant",
+    },
+    { status: 403 }
+  );
 }
+
 /////
   await pool.query(
   `INSERT INTO vehicles
@@ -246,10 +258,11 @@ if (rows.length) {
     make,
     model,
     year,
-    late_fee_day,
+    late_fee_day,late_fee_hour,
     price_per_week,
     price_per_month,
     price_per_year,
+    price_per_hour,
     currency_code,
     currency,
     trim,
@@ -265,17 +278,18 @@ if (rows.length) {
     status,
     created_at
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?,?, ?,?,?,?,?, ?, ?,?, ?, ?, ?, ?, ?, NOW())`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?,?, ?,?,?,?,?,?,?, ?, ?,?, ?, ?, ?, ?, ?, NOW())`,
   [
     tenant_id,
     branch_id || null,
     make || '',
     model || '',
     year || null,
-    late_fee_day || null,
+    late_fee_day || null, late_fee_hour || null,
     price_per_week|| null,
     price_per_month|| null,
     price_per_year|| null,
+    price_per_hour|| null,
     currency_code|| '',
     currency|| '',
     trim || '',

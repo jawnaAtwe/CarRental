@@ -194,23 +194,26 @@ export async function GET(req: NextRequest, { params }: any) {
       return NextResponse.json({ error: getBookingMessage("noBookingsFound", lang) }, { status: 404 });
     }
 
-    const [rows] = await pool.query(
-      `SELECT 
-          b.*,v.late_fee_day,
-          DATE_FORMAT(b.start_date, '%Y-%m-%d') AS start_date,
-          DATE_FORMAT(b.end_date, '%Y-%m-%d') AS end_date,
-          c.full_name AS customer_name,
-          CONCAT(v.make, ' ', v.model) AS vehicle_name,
-           br.name AS branch_name,
-            v.currency_code,
-      br.name_ar  AS branch_name_ar
-       FROM bookings b
-       LEFT JOIN customers c ON b.customer_id = c.id
-       LEFT JOIN vehicles v ON b.vehicle_id = v.id
-        LEFT JOIN branches br ON b.branch_id = br.id
-       WHERE b.id = ? AND b.status != 'deleted'`,
-      [bookingId]
-    );
+   const [rows] = await pool.query(
+  `SELECT 
+      b.*,
+      v.late_fee_day,
+      v.late_fee_hour,
+      DATE_FORMAT(b.start_date, '%Y-%m-%d %H:%i') AS start_date,
+      DATE_FORMAT(b.end_date, '%Y-%m-%d %H:%i') AS end_date,
+      c.full_name AS customer_name,
+      CONCAT(v.make, ' ', v.model) AS vehicle_name,
+      br.name AS branch_name,
+      br.name_ar AS branch_name_ar,
+      v.currency_code
+   FROM bookings b
+   LEFT JOIN customers c ON b.customer_id = c.id
+   LEFT JOIN vehicles v ON b.vehicle_id = v.id
+   LEFT JOIN branches br ON b.branch_id = br.id
+   WHERE b.id = ? AND b.status != 'deleted'`,
+  [bookingId]
+);
+
 
     const booking = (rows as any)[0];
     if (!booking) {

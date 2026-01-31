@@ -269,7 +269,7 @@ export async function DELETE(req: NextRequest) {
 
     // Only draft invoices can be deleted
     const [rows] = await pool.query(
-      `SELECT id FROM invoices WHERE id IN (?) AND status = 'draft'`,
+      `SELECT id FROM invoices WHERE id IN (?) AND status != 'cancelled'`,
       [normalizedIds]
     );
     const deletable = (rows as any[]).map(r => r.id);

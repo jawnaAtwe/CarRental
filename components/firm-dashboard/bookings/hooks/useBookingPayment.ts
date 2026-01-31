@@ -22,40 +22,53 @@ export const useBookingPayment = (
     split_details: '',
   });
 
-  const calculateLateFee = (booking: BookingDB): number => {
-    const lateFeePerDay = booking.late_fee_day ?? 0;
-    const endDate = booking.end_date ? new Date(booking.end_date) : null;
-    const today = new Date();
+const calculateLateFee = (booking: BookingDB): number => {
+  const lateFeePerDay = booking.late_fee_day ?? 0;
+  const lateFeePerHour = booking.late_fee_hour ?? 0;
 
-    if (!endDate || isNaN(endDate.getTime())) {
-      return 0;
-    }
+  if (!booking.end_date) return 0;
 
-    const daysLate = Math.max(
-      0,
-      Math.floor((today.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24))
-    );
+  const endDate = new Date(booking.end_date);
+  const now = new Date();
 
-    return lateFeePerDay * daysLate;
-  };
+  if (isNaN(endDate.getTime()) || now <= endDate) {
+    return 0;
+  }
 
-  const openPaymentModal = (booking: BookingDB) => {
-    setPaymentBooking(booking);
-    const lateFee = calculateLateFee(booking);
+  const diffMs = now.getTime() - endDate.getTime();
+  const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
 
-    setPaymentData({
-      booking_id: booking.id,
-      customer_id: booking.customer_id,
-      amount: booking.total_amount,
-      payment_method: 'cash',
-      is_deposit: false,
-      partial_amount: 0,
-      late_fee: lateFee,
-      split_details: '',
-    });
+  // 🔹 أولوية للساعة
+  if (lateFeePerHour > 0) {
+    return diffHours * lateFeePerHour;
+  }
 
-    paymentModal.onOpen();
-  };
+  // 🔹 fallback: بالأيام
+  const diffDays = Math.ceil(diffHours / 24);
+  return diffDays * lateFeePerDay;
+};
+
+
+
+ const openPaymentModal = (booking: BookingDB) => {
+  setPaymentBooking(booking);
+
+  const lateFee = calculateLateFee(booking);
+
+  setPaymentData({
+    booking_id: booking.id,
+    customer_id: booking.customer_id,
+    amount: booking.total_amount,
+    payment_method: 'cash',
+    is_deposit: false,
+    partial_amount: 0,
+    late_fee: lateFee,
+    split_details: '',
+  });
+
+  paymentModal.onOpen();
+};
+
 
   const submitPayment = async () => {
     if (!paymentBooking || !selectedTenantId) return;
