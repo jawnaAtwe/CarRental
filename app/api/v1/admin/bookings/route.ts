@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbConnection } from "../../functions/db";
 import { validateFields } from "../../functions/validation";
-
+import admin from "firebase-admin";
 const errorMessages = {
   en: {
     missingFields: "Required fields are missing.",
@@ -30,6 +30,16 @@ const errorMessages = {
 
 function getErrorMessage(key: keyof typeof errorMessages["en"], lang: "en" | "ar" = "en") {
   return errorMessages[lang][key] || errorMessages["en"][key];
+}
+// تهيئة Firebase Admin
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    }),
+  });
 }
 /**
  * POST /api/v1/admin/bookings
@@ -175,6 +185,60 @@ if (rows.length) {
         notes || null
       ]
     );
+ // 🔹 إرسال إشعار FCM لجميع المستخدمين في الشركة
+
+// 1️⃣ جلب اسم الشركة من جدول tenants
+const [tenantInfo]: any[] = await pool.query(
+  `SELECT name FROM tenants WHERE id = ?`,
+  [tenant_id]
+);
+
+if (!tenantInfo || tenantInfo.length === 0) {
+  console.error(`Tenant not found with id: ${tenant_id}`);
+  return; // أو ارجع response مناسب
+}
+
+const tenantName = lang === "ar" 
+  ? tenantInfo[0].name || "الشركة" 
+  : tenantInfo[0].name || "Company";
+
+// 2️⃣ جلب FCM tokens للمستخدمين
+const [tenantRows]: any[] = await pool.query(
+  `SELECT fcm_token, full_name FROM users WHERE tenant_id = ? AND fcm_token IS NOT NULL`,
+  [tenant_id]
+);
+
+console.log(`📤 Sending notifications to ${tenantRows.length} users for: ${tenantName}`);
+
+// 3️⃣ إرسال الإشعارات
+let sentCount = 0;
+for (const user of tenantRows) {
+  try {
+    await admin.messaging().send({
+      token: user.fcm_token,
+      notification: {
+        title: lang === "ar" ? "تم استلام حجز جديد!" : "New Booking Received!",
+        body: lang === "ar"
+          ? `تم استلام حجز جديد في ${tenantName} من ${start_date} إلى ${end_date}`
+          : `New booking at ${tenantName} from ${start_date} to ${end_date}`,
+      },
+      data: {
+        type: "new_booking",
+        tenant_id: tenant_id.toString(),
+        start_date,
+        end_date,
+      },
+      android: { priority: "high" },
+      apns: { headers: { "apns-priority": "10" } },
+    });
+    sentCount++;
+  } catch (error) {
+    console.error(`❌ Failed to send notification to ${user.full_name}:`, error);
+  }
+}
+
+console.log(`✅ Successfully sent ${sentCount}/${tenantRows.length} notifications`);
+
 
     return NextResponse.json({ message: getErrorMessage("success", lang) }, { status: 200 });
 

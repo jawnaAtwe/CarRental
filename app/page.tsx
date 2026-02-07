@@ -1,9 +1,10 @@
 "use client";
 import { motion } from "framer-motion";
-import { useState } from "react";
 import { Button } from "@heroui/button";
 import { GithubIcon } from "@/components/icons";
-
+import React, { useEffect, useState } from 'react';
+import { useSession } from "next-auth/react";
+ import { messaging, requestNotificationPermission } from '../lib/firebase-config';
 export default function Home() {
   const heroCars = [
     {
@@ -22,9 +23,36 @@ export default function Home() {
       desc: "Space, safety, and long-trip confidence.",
     },
   ];
-
+interface SessionUser {
+  id: number;
+  email: string;
+  name: string;
+  type: "user" | "customer";
+  roles: string[];
+  permissions: string[];
+  tenantId: number;
+  roleId: number;
+}
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const { data: session, status } = useSession();
+  const user = session?.user as SessionUser | undefined;
 
+  useEffect(() => {
+    if (!user || user.type !== "user") return;
+
+    const initFCM = async () => {
+      const token = await requestNotificationPermission();
+      if (token) {
+        await fetch("/api/fcm-token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: user.id, fcm_token: token }),
+        });
+      }
+    };
+
+    initFCM();
+  }, [user]);
   return (
    <div className="relative min-h-screen w-full bg-white dark:bg-[#0B0F1A]">
       {/* Glow background */}

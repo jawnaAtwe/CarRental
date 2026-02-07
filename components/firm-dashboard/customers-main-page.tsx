@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { useLanguage } from "../context/LanguageContext";
+ import { messaging, requestNotificationPermission } from '../../lib/firebase-config';
+import { onMessage } from 'firebase/messaging';
 
 interface Car {
   id: number;
@@ -67,6 +69,42 @@ const CustomerDashboardPage: React.FC = () => {
 
   const { data: session } = useSession();
   const user = session?.user as SessionUser | undefined;
+
+  // useEffect(() => {
+  //   if (!user || user.type !== "user") return;
+
+  //   const initFCM = async () => {
+  //     const token = await requestNotificationPermission();
+  //     if (token) {
+  //       await fetch("/api/fcm-token", {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({ user_id: user.id, fcm_token: token }),
+  //       });
+  //     }
+  //   };
+
+  //   initFCM();
+  // }, [user]);
+
+useEffect(() => {
+  if (!messaging) return;
+  const unsubscribe = onMessage(messaging, (payload) => {
+    const { title, body } = payload.notification || {};
+    if (Notification.permission === "granted") {
+      new Notification(title ?? "Notification", { body, icon: "/favicon.ico" });
+    }
+  });
+  return () => unsubscribe();
+}, []);
+
+
+useEffect(() => {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/firebase-messaging-sw.js");
+  }
+}, []);
+
 
   // Fetch tenants
   useEffect(() => {
@@ -184,51 +222,79 @@ const calculateCarPrice = (car: Car): number => {
     setBookingMessage(null); 
   };
 
-  const handleBooking = async () => {
-    if (!selectedCars.length || !pickupDate || !dropoffDate || !selectedBranch || !selectedTenantId) {
-      setBookingMessage({ text: "Please select all required fields!", type: "error" });
-      return;
-    }
 
-    if (getNumberOfDays() <= 0) {
-      setBookingMessage({ text: "End date must be after pickup date!", type: "error" });
-      return;
-    }
+const handleBooking = async () => {
+  if (!selectedCars.length || !pickupDate || !dropoffDate || !selectedBranch || !selectedTenantId) {
+    setBookingMessage({ text: "Please select all required fields!", type: "error" });
+    return;
+  }
 
-    try {
-      for (const car of selectedCars) {
-        const payload = {
-          tenant_id: selectedTenantId,
-          branch_id: selectedBranchId,
-          vehicle_id: car.id,
-          customer_id: user?.id,
-          total_amount: calculateCarPrice(car),
-          start_date: pickupDate,
-          end_date: dropoffDate,
-          status: "pending",
-          notes: "",
-        };
+  if (getNumberOfDays() <= 0) {
+    setBookingMessage({ text: "End date must be after pickup date!", type: "error" });
+    return;
+  }
 
-        const res = await fetch(`${API_BASE_URL}/bookings`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+   try {
+  //   // ----- توليد FCM token -----
+  //   let fcmToken = await requestNotificationPermission();
+  //   if (fcmToken) {
+  //     // إرسال الـ token للباك لتخزينه مع المستخدم
+  //     await fetch('/api/fcm-token', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ user_id: user?.id, fcm_token: fcmToken }),
+  //     });
+  //   }
 
-        const data = await res.json();
-        if (!res.ok) {
-          setBookingMessage({ text: data.error || "Booking failed!", type: "error" });
-          return;
-        }
+    // ----- تنفيذ الحجز -----
+    for (const car of selectedCars) {
+      const payload = {
+        tenant_id: selectedTenantId,
+        branch_id: selectedBranchId,
+        vehicle_id: car.id,
+        customer_id: user?.id,
+        total_amount: calculateCarPrice(car),
+        start_date: pickupDate,
+        end_date: dropoffDate,
+        status: "pending",
+        notes: "",
+      };
+
+      const res = await fetch(`${API_BASE_URL}/bookings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setBookingMessage({ text: data.error || "Booking failed!", type: "error" });
+        return;
       }
-
-      setBookingMessage({ text: "Booking Successful! 🚗", type: "success" });
-      setSelectedCars([]);
-    } catch (err) {
-      console.error(err);
-      setBookingMessage({ text: "Booking failed! Check console for details.", type: "error" });
     }
-  };
+
+    setBookingMessage({ text: "Booking Successful! 🚗", type: "success" });
+    setSelectedCars([]);
+
+    // ----- إرسال إشعار FCM بعد الحجز -----
+    // if (fcmToken) {
+    //   await fetch('/api/sendNotification', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({
+    //       token: fcmToken,
+    //       title: 'Booking Confirmed!',
+    //       body: `Your booking from ${pickupDate} to ${dropoffDate} is confirmed 🚗`,
+    //     }),
+    //   });
+    // }
+
+  } catch (err) {
+    console.error(err);
+    setBookingMessage({ text: "Booking failed! Check console for details.", type: "error" });
+  }
+};
+
 
   return (
     <div

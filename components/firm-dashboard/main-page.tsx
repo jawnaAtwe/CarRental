@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from "next-auth/react";
 import { useLanguage } from "../context/LanguageContext";
+ import { messaging, requestNotificationPermission } from '../../lib/firebase-config';
 import { lang } from '../Lang/lang';
 import {
   Line,

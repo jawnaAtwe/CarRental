@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { addToast } from '@heroui/react';
+ import { messaging, requestNotificationPermission } from '../../../../lib/firebase-config';
+import { onMessage } from 'firebase/messaging';
 import { bookingService } from '../services/bookingService';
 import { 
   BookingDB, 
@@ -39,6 +41,42 @@ export const useBookingData = (language: string) => {
   const [tenantsLoading, setTenantsLoading] = useState(false);
   const [branchesLoading, setBranchesLoading] = useState(false);
   const [branchesError, setBranchesError] = useState<string | null>(null);
+useEffect(() => {
+  if (!messaging || !user) return;
+  
+  const unsubscribe = onMessage(messaging, (payload) => {
+    console.log("📩 Notification received:", payload);
+    
+    const notificationTenantId = selectedTenantId?.toString();
+    const userTenantId = user.tenantId?.toString();
+    
+    // ✅ فقط إذا الإشعار من نفس شركة المستخدم
+    if (notificationTenantId === userTenantId) {
+      const { title, body } = payload.notification || {};
+      
+      if (Notification.permission === "granted") {
+        new Notification(title ?? "إشعار جديد", { 
+          body, 
+          icon: "/favicon.ico",
+          tag: "booking-notification",
+        });
+      }
+      
+      // حدّث الـ UI
+      console.log("✅ Notification is for my company");
+    } else {
+      console.log(`⚠️ Ignored notification from tenant ${notificationTenantId}, I'm in ${userTenantId}`);
+    }
+  });
+
+  return () => unsubscribe();
+}, [messaging, user]);
+
+useEffect(() => {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/firebase-messaging-sw.js");
+  }
+}, []);
 
   useEffect(() => {
     if (user) setSessionLoaded(true);
