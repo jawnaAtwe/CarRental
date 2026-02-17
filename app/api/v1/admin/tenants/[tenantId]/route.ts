@@ -7,19 +7,31 @@ import { dbConnection } from "../../../functions/db";
 import { validateFields } from "../../../functions/validation";
 import argon2 from "argon2";
 import { hasPermission, getUserData, hasTenantAccess } from "../../../functions/permissions";
-
+import { isSuperAdmin } from "@/lib/auth";
 const errorMessages = {
    en: {
     missingtenant: "Tenant ID is required.",
     tenantNotFound: "Tenant not found.",
     serverError: "Internal server error.",
     fetched: "Tenant fetched successfully.",
+    noTenantFound: "No active tenant found.",
+    missingFields: "Missing required fields.",
+    tenantUpdated: "Tenant updated successfully.",
+    tenantDeleted: "Tenant deleted successfully.",
+    unauthorized: "You are not authorized to perform this action.",
+    forbidden: "You do not have permission to access this resource.",
   },
   ar: {
     missingtenant: "معرف الشركة مطلوب.",
     tenantNotFound: "الشركة غير موجودة.",
     serverError: "خطأ في الخادم الداخلي.",
     fetched: "تم جلب بيانات الشركة بنجاح.",
+    noTenantFound: "لم يتم العثور على أي منظمة.",
+    missingFields: "الرجاء ملء جميع الحقول المطلوبة.",
+    tenantUpdated: "تم تحديث المنظمة بنجاح.",
+    tenantDeleted: "تم حذف المنظمة بنجاح.",
+    unauthorized: "غير مسموح لك بالقيام بهذا الإجراء.",
+    forbidden: "ليس لديك إذن للوصول إلى هذا المورد.",
   },
 };
 
@@ -99,5 +111,169 @@ return NextResponse.json(tenant, { status: 200 });
     const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
 
    return NextResponse.json({ error: getErrorMessage("serverError", lang) }, { status: 500 });
+  }
+}
+
+
+/**
+ * PUT /api/v1/admin/tenants/[tenantId]
+ */
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { tenantId: string } }
+) {
+  try {
+    const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
+    const pool = await dbConnection();
+    const tenantId = params.tenantId;
+
+    if (!tenantId) {
+      return NextResponse.json(
+        { error: getErrorMessage("noTenantFound", lang) },
+        { status: 400 }
+      );
+    }
+
+    const user: any = await getUserData(req);
+    const hasAccess = await isSuperAdmin(user);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: getErrorMessage("unauthorized", lang) },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+    const {
+      name,
+      legal_name,
+      email,
+      phone,
+      website,
+      logo_url,
+      primary_color,
+      secondary_color,
+      invoice_footer,
+      subdomain,
+      subscription_plan,
+      plan_expires_at,
+      max_branches,
+      max_cars,
+      max_users,
+      currency,
+      currency_code,
+    } = body;
+
+    // Required minimal fields check
+    if (!name || !email) {
+      return NextResponse.json(
+        { error: getErrorMessage("missingFields", lang) },
+        { status: 400 }
+      );
+    }
+
+    await pool.query(
+      `UPDATE tenants
+       SET 
+         name = ?,
+         legal_name = ?,
+         email = ?,
+         phone = ?,
+         website = ?,
+         logo_url = ?,
+         primary_color = ?,
+         secondary_color = ?,
+         invoice_footer = ?,
+         subdomain = ?,
+         subscription_plan = ?,
+         plan_expires_at = ?,
+         max_branches = ?,
+         max_cars = ?,
+         max_users = ?,
+         currency = ?,
+         currency_code = ?,
+         updated_at = NOW()
+       WHERE id = ?`,
+      [
+        name,
+        legal_name || null,
+        email,
+        phone || null,
+        website || null,
+        logo_url || null,
+        primary_color || null,
+        secondary_color || null,
+        invoice_footer || null,
+        subdomain || null,
+        subscription_plan || null,
+        plan_expires_at || null,
+        max_branches || 1,
+        max_cars || 50,
+        max_users || 5,
+        currency || "Shekel",
+        currency_code || "ILS",
+        tenantId,
+      ]
+    );
+
+    return NextResponse.json(
+      { message: getErrorMessage("tenantUpdated", lang) },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Update tenant error:", error);
+    const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
+    return NextResponse.json(
+      { error: getErrorMessage("serverError", lang) },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/v1/admin/tenants/[tenantId]
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { tenantId: string } }
+) {
+  try {
+    const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
+    const pool = await dbConnection();
+    const tenantId = params.tenantId;
+
+    if (!tenantId) {
+      return NextResponse.json(
+        { error: getErrorMessage("noTenantFound", lang) },
+        { status: 400 }
+      );
+    }
+
+    const user: any = await getUserData(req);
+    const hasAccess = await isSuperAdmin(user);
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: getErrorMessage("unauthorized", lang) },
+        { status: 401 }
+      );
+    }
+
+    // Soft delete: تغيير الحالة إلى 'deleted'
+    await pool.query(
+      `UPDATE tenants SET status = 'deleted' WHERE id = ?`,
+      [tenantId]
+    );
+
+    return NextResponse.json(
+      { message: getErrorMessage("tenantDeleted", lang) },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Delete tenant error:", error);
+    const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
+    return NextResponse.json(
+      { error: getErrorMessage("serverError", lang) },
+      { status: 500 }
+    );
   }
 }

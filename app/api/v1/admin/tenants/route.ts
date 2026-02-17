@@ -5,16 +5,24 @@ import { dbConnection } from "../../functions/db";
 import { validateFields } from "../../functions/validation";
 import argon2 from "argon2";
 import { hasPermission, getUserData, hasTenantAccess } from "../../functions/permissions";
-
+import { isSuperAdmin } from "@/lib/auth";
 const errorMessages = {
   en: {
     serverError: "Internal server error.",
     noTenantFound: "No active tenant found.",
+    missingFields: "Missing required fields.",
+    tenantDeleted: "Tenant deleted successfully.",
+    tenantCreated: "Tenant created successfully.",
+     unauthorized: "You are not authorized to perform this action.",
   },
   ar: {
   
     serverError: "خطأ في الخادم الداخلي.",
     noTenantFound: "لم يتم العثور على أي منظمة .",
+      missingFields: "الرجاء ملء جميع الحقول المطلوبة.",
+    tenantDeleted: "تم حذف المنظمة بنجاح.",
+    tenantCreated: "تم إنشاء المنظمة بنجاح.",
+     unauthorized: "غير مسموح لك بالقيام بهذا الإجراء.",
   },
 };
 
@@ -147,5 +155,90 @@ export async function GET(req: NextRequest) {
     const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
 
     return NextResponse.json({ error: getErrorMessage("serverError", lang) }, { status: 500 });
+  }
+}
+
+
+export async function POST(req: NextRequest) {
+  try {
+    const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
+    const pool = await dbConnection();
+    const body = await req.json();
+    const user: any = await getUserData(req);
+     const hasAccess = await isSuperAdmin(user);
+          if (!hasAccess) {
+            return NextResponse.json({ error: getErrorMessage("unauthorized", lang) }, { status: 401 });
+          }
+     
+    const requiredFields:any = ["name", "legal_name", "email", "subdomain"];
+    if (!validateFields(body, requiredFields)) {
+      return NextResponse.json(
+        { error: getErrorMessage("missingFields", lang) },
+        { status: 400 }
+      );
+    }
+
+    const { name, legal_name, email, phone, website, subdomain } = body;
+
+    await pool.query(
+      `INSERT INTO tenants (name, legal_name, email, phone, website, subdomain, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'active')`,
+      [name, legal_name, email, phone || null, website || null, subdomain]
+    );
+
+    return NextResponse.json(
+      { message: getErrorMessage("tenantCreated", lang) },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Create tenant error:", error);
+    const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
+    return NextResponse.json(
+      { error: getErrorMessage("serverError", lang) },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/v1/admin/tenants?id=<tenantId>
+ * Soft-delete a tenant
+ */
+export async function DELETE(req: NextRequest) {
+  try {
+    const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
+    const pool = await dbConnection();
+    const { searchParams } = new URL(req.url);
+    const tenantId = searchParams.get("id");
+
+    if (!tenantId) {
+      return NextResponse.json(
+        { error: getErrorMessage("noTenantFound", lang) },
+        { status: 400 }
+      );
+    }
+   const user: any = await getUserData(req);
+     const hasAccess = await isSuperAdmin(user);
+          if (!hasAccess) {
+            return NextResponse.json({ error: getErrorMessage("unauthorized", lang) }, { status: 401 });
+          }
+     
+    // Soft delete
+    await pool.query(
+      `UPDATE tenants SET status = 'deleted' WHERE id = ?`,
+      [tenantId]
+    );
+
+    return NextResponse.json(
+      { message: getErrorMessage("tenantDeleted", lang) },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Delete tenant error:", error);
+    const lang = req.headers.get("accept-language")?.startsWith("ar") ? "ar" : "en";
+    return NextResponse.json(
+      { error: getErrorMessage("serverError", lang) },
+      { status: 500 }
+    );
   }
 }
