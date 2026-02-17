@@ -113,6 +113,12 @@ export const SidebarItems = ({
       href={`/${firmId}/dashboard/customers`}
       icon={<UsersIcon className="!w-6 !h-6" />}
     />
+     <SidebarItem
+      isActive={pathname === `/${firmId}/dashboard/tenants`}
+      title={lang(language, "sidebar.tenants")}
+      href={`/${firmId}/dashboard/tenants`}
+      icon={<UsersIcon className="!w-6 !h-6" />}
+    />
   </>
 )}
 
